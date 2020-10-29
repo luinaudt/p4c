@@ -65,7 +65,7 @@ def isError(p4filename):
 
 def ignoreStderr(options):
     for line in open(options.p4filename):
-        if "P4TEST_IGNORE_STDERR" in line:
+        if "P4FPGA_IGNORE_STDERR" in line:
             return True
     return False
 
@@ -143,7 +143,7 @@ def compare_files(options, produced, expected, ignore_case):
 def recompile_file(options, produced, mustBeIdentical):
     # Compile the generated file a second time
     secondFile = produced + "-x";
-    args = ["./p4test", "-I.", "--pp", secondFile, "--std", "p4-16", produced] + \
+    args = ["./p4fpga", "-I.", "--pp", secondFile, "--std", "p4-16", produced] + \
             options.compilerOptions
     if options.runDebugger:
         if options.runDebugger_skip > 0:
@@ -242,7 +242,7 @@ def process_file(options, argv):
 
     if not os.path.isfile(options.p4filename):
         raise Exception("No such file " + options.p4filename)
-    args = ["./p4test", "--pp", ppfile, "--dump", tmpdir, "--top4", referenceOutputs,
+    args = ["./p4fpga", "--pp", ppfile, "--dump", tmpdir, "--top4", referenceOutputs,
             "--testJson"] + options.compilerOptions
     arch = getArch(options.p4filename)
     if arch is not None:
@@ -361,7 +361,7 @@ def main(argv):
             sys.exit(FAILURE)
         argv = argv[1:]
 
-    if 'P4TEST_REPLACE' in os.environ:
+    if 'P4FPGA_REPLACE' in os.environ:
         options.replace = True
 
     options.p4filename=argv[-1]

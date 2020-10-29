@@ -17,7 +17,7 @@ limitations under the License.
 #include <fstream>
 #include <iostream>
 
-#include "backends/p4test/version.h"
+#include "backends/p4fpga/version.h"
 #include "control-plane/p4RuntimeSerializer.h"
 #include "ir/ir.h"
 #include "ir/json_loader.h"
@@ -34,20 +34,20 @@ limitations under the License.
 #include "frontends/p4/toP4/toP4.h"
 #include "midend.h"
 
-class P4TestOptions : public CompilerOptions {
+class P4FpgaOptions : public CompilerOptions {
  public:
     bool parseOnly = false;
     bool validateOnly = false;
     bool loadIRFromJson = false;
-    P4TestOptions() {
+    P4FpgaOptions() {
         registerOption("--listMidendPasses", nullptr,
                 [this](const char*) {
                     listMidendPasses = true;
                     loadIRFromJson = false;
-                    P4Test::MidEnd MidEnd(*this, outStream);
+                    P4Fpga::MidEnd MidEnd(*this, outStream);
                     exit(0);
                     return false; },
-                "[p4test] Lists exact name of all midend passes.\n");
+                "[p4fpga] Lists exact name of all midend passes.\n");
         registerOption("--parse-only", nullptr,
                        [this](const char*) {
                            parseOnly = true;
@@ -69,7 +69,7 @@ class P4TestOptions : public CompilerOptions {
      }
 };
 
-using P4TestContext = P4CContextWithOptions<P4TestOptions>;
+using P4FpgaContext = P4CContextWithOptions<P4FpgaOptions>;
 
 static void log_dump(const IR::Node *node, const char *head) {
     if (node && LOGGING(1)) {
@@ -87,10 +87,10 @@ int main(int argc, char *const argv[]) {
     setup_gc_logging();
     setup_signals();
 
-    AutoCompileContext autoP4TestContext(new P4TestContext);
-    auto& options = P4TestContext::get().options();
+    AutoCompileContext autoP4FpgaContext(new P4FpgaContext);
+    auto& options = P4FpgaContext::get().options();
     options.langVersion = CompilerOptions::FrontendVersion::P4_16;
-    options.compilerVersion = P4TEST_VERSION_STRING;
+    options.compilerVersion = P4FPGA_VERSION_STRING;
 
     if (options.process(argc, argv) != nullptr) {
             if (options.loadIRFromJson == false)
@@ -135,7 +135,7 @@ int main(int argc, char *const argv[]) {
         P4::serializeP4RuntimeIfRequired(program, options);
 
         if (!options.parseOnly && !options.validateOnly) {
-            P4Test::MidEnd midEnd(options);
+            P4Fpga::MidEnd midEnd(options);
             midEnd.addDebugHook(hook);
 #if 0
             /* doing this breaks the output until we get dump/undump of srcInfo */

@@ -14,14 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#ifndef _BACKENDS_P4TEST_MIDEND_H_
-#define _BACKENDS_P4TEST_MIDEND_H_
+#ifndef _BACKENDS_P4FPGA_MIDEND_H_
+#define _BACKENDS_P4FPGA_MIDEND_H_
 
 #include "ir/ir.h"
 #include "frontends/common/options.h"
 #include "frontends/p4/evaluator/evaluator.h"
 
-namespace P4Test {
+namespace P4fpga {
 
 class MidEnd : public PassManager {
  public:
@@ -35,6 +35,6 @@ class MidEnd : public PassManager {
         return toplevel; }
 };
 
-}   // namespace P4Test
+}   // namespace P4fpga
 
-#endif /* _BACKENDS_P4TEST_MIDEND_H_ */
+#endif /* _BACKENDS_P4FPGA_MIDEND_H_ */

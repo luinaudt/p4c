@@ -54,7 +54,7 @@ limitations under the License.
 #include "midend/tableHit.h"
 #include "midend/removeAssertAssume.h"
 
-namespace P4Test {
+namespace P4Fpga {
 
 class SkipControls : public P4::ActionSynthesisPolicy {
     const std::set<cstring> *skip;
@@ -158,4 +158,4 @@ MidEnd::MidEnd(CompilerOptions& options, std::ostream* outStream) {
     }
 }
 
-}  // namespace P4Test
+}  // namespace P4Fpga

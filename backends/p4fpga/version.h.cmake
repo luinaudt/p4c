@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#ifndef _BACKENDS_P4TEST_VERSION_H
-#define _BACKENDS_P4TEST_VERSION_H
+#ifndef _BACKENDS_P4FPGA_VERSION_H
+#define _BACKENDS_P4FPGA_VERSION_H
 
 /**
   Set the compiler version at build time.
@@ -33,6 +33,6 @@ limitations under the License.
 
   */
 
-#define P4TEST_VERSION_STRING "@P4C_VERSION@"
+#define P4FPGA_VERSION_STRING "@P4C_VERSION@"
 
-#endif  // _BACKENDS_P4TEST_VERSION_H
+#endif  // _BACKENDS_P4FPGA_VERSION_H
