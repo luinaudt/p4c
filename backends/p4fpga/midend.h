@@ -21,7 +21,7 @@ limitations under the License.
 #include "frontends/common/options.h"
 #include "frontends/p4/evaluator/evaluator.h"
 
-namespace P4fpga {
+namespace P4Fpga {
 
 class MidEnd : public PassManager {
  public:
@@ -35,6 +35,6 @@ class MidEnd : public PassManager {
         return toplevel; }
 };
 
-}   // namespace P4fpga
+}   // namespace P4Fpga
 
 #endif /* _BACKENDS_P4FPGA_MIDEND_H_ */
