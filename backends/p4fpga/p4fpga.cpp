@@ -137,16 +137,6 @@ int main(int argc, char *const argv[]) {
         if (!options.parseOnly && !options.validateOnly) {
             P4Fpga::MidEnd midEnd(options);
             midEnd.addDebugHook(hook);
-#if 0
-            /* doing this breaks the output until we get dump/undump of srcInfo */
-            if (options.debugJson) {
-                std::stringstream tmp;
-                JSONGenerator gen(tmp);
-                gen << program;
-                JSONLoader loader(tmp);
-                loader >> program;
-            }
-#endif
             const IR::ToplevelBlock *top = nullptr;
             try {
                 top = midEnd.process(program);

@@ -1,7 +1,6 @@
 frontends/p4/p4-lex.c
 frontends/p4/p4-parse.cpp
 py-compile
-
 # vi/emacs tags files
 
 TAGS
@@ -26,6 +25,8 @@ build/
 .project
 .settings
 .vscode
+.cache
+
 
 #vim swaps
 .*.swp
