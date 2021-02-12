@@ -19,10 +19,10 @@ limitations under the License.
 #include <iostream>
 #include "backends/p4fpga/p4fpga.h"
 #include "backends/p4fpga/options.h"
-#include "lib/gc.h"
-#include "lib/log.h"
-#include "lib/compile_context.h"
 #include "backends/p4fpga/version.h"
+#include "lib/gc.h"
+#include "lib/compile_context.h"
+#include "lib/error.h"
 
 int main(int argc, char *const argv[]) {
     setup_gc_logging();
@@ -35,5 +35,5 @@ int main(int argc, char *const argv[]) {
         options.setInputFile();
     }
 
-    return 0;
+    return ::errorCount() > 0;
 }
