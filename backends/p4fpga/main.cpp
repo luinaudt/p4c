@@ -17,9 +17,15 @@ limitations under the License.
 #include <stdio.h>
 #include <string>
 #include <iostream>
+
+#include "frontends/common/applyOptionsPragmas.h"
+#include "frontends/common/parseInput.h"
+#include "frontends/p4/frontend.h"
+#include "lib/nullstream.h"
 #include "backends/p4fpga/p4fpga.h"
 #include "backends/p4fpga/options.h"
 #include "backends/p4fpga/version.h"
+#include "ir/ir.h"
 #include "lib/gc.h"
 #include "lib/compile_context.h"
 #include "lib/error.h"
@@ -30,10 +36,35 @@ int main(int argc, char *const argv[]) {
     auto& options = FPGA::FpgaContext::get().options();
     options.langVersion = CompilerOptions::FrontendVersion::P4_16;
     options.compilerVersion = P4FPGA_VERSION_STRING;
+    auto hook = options.getDebugHook();
 
     if (options.process(argc, argv) != nullptr) {
         options.setInputFile();
     }
+
+    const IR::P4Program *program = nullptr;
+    const IR::ToplevelBlock* toplevel = nullptr;
+
+    // program parsing
+    program = P4::parseP4File(options);
+    if (program == nullptr || ::errorCount() > 0)
+        return 1;
+    try {
+        P4::P4COptionPragmaParser optionsPragmaParser;
+        program->apply(P4::ApplyOptionsPragmas(optionsPragmaParser));
+
+        P4::FrontEnd frontend;
+        frontend.addDebugHook(hook);
+        program = frontend.run(options, program);
+    } catch (const std::exception &bug) {
+        std::cerr << bug.what() << std::endl;
+        return 1;
+    }
+    if (program == nullptr || ::errorCount() > 0)
+        return 1;
+    
+    if (options.dumpJsonFile)
+        JSONGenerator(*openFile(options.dumpJsonFile, true), true) << program << std::endl;
 
     return ::errorCount() > 0;
 }
