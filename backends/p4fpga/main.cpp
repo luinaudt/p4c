@@ -62,9 +62,22 @@ int main(int argc, char *const argv[]) {
     }
     if (program == nullptr || ::errorCount() > 0)
         return 1;
-    
+
+    // midend here
     if (options.dumpJsonFile)
         JSONGenerator(*openFile(options.dumpJsonFile, true), true) << program << std::endl;
+
+    // backend
+    if (!options.outputFile.isNullOrEmpty()) {
+            JSONGenerator(*openFile(options.outputFile, true), true) << program << std::endl;
+            /*std::ostream* out = openFile(options.outputFile, false);
+            if (out != nullptr) {
+                //backend->serialize(*out);
+                
+                out->flush();
+            }*/
+        }
+
 
     return ::errorCount() > 0;
 }
