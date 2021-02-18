@@ -17,6 +17,7 @@ limitations under the License.
 #ifndef BACKENDS_FPGA_OPTIONS_H_
 #define BACKENDS_FPGA_OPTIONS_H_
 #include "frontends/common/options.h"
+#include <stdlib.h>
 
 namespace FPGA{
 
@@ -24,7 +25,13 @@ class P4FpgaOptions : public CompilerOptions {
  public:
     bool parseOnly = false;
     cstring outputFile = "a.out";
+    unsigned outBusWidth = 64;
     P4FpgaOptions() {
+        registerOption("--outputWidth", "width", 
+                      [this](const char* arg) {
+                        outBusWidth = strtoul(arg, nullptr, 10);
+                        return true;},
+                      "set output bus width in bits. default 64 bits");
         registerOption("--parse-only", nullptr,
                        [this](const char*) {
                            parseOnly = true;
