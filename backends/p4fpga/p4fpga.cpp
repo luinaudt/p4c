@@ -1,5 +1,5 @@
 /*
-Copyright 2013-present Barefoot Networks, Inc.
+Copyright 2021-present Thomas Luinaud
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,5 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include <fstream>
-#include <iostream>
+#include "backends/p4fpga/p4fpga.h"
+#include "common/options.h"
+
+namespace FPGA{
+    FPGABackend::FPGABackend(FPGA::P4FpgaOptions& options) : 
+                    options(options) {
+        json = new FPGA::FPGAJson(options);
+    }
+}

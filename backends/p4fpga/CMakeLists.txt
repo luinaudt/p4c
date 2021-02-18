@@ -19,11 +19,13 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/version.h.cmake"
 
 set (P4FPGA_SRCS
   p4fpga.cpp
+  JsonObjects.cpp
   main.cpp
   )
 set (P4FPGA_HDRS
   p4fpga.h
   options.h
+  JsonObjects.h
   )
 
 add_cpplint_files (${CMAKE_CURRENT_SOURCE_DIR} "${P4FPGA_SRCS};${P4FPGA_HDRS}")

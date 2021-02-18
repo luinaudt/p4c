@@ -21,6 +21,7 @@ limitations under the License.
 #include "frontends/common/applyOptionsPragmas.h"
 #include "frontends/common/parseInput.h"
 #include "frontends/p4/frontend.h"
+#include "lib/error_catalog.h"
 #include "lib/nullstream.h"
 #include "backends/p4fpga/p4fpga.h"
 #include "backends/p4fpga/options.h"
@@ -68,15 +69,19 @@ int main(int argc, char *const argv[]) {
         JSONGenerator(*openFile(options.dumpJsonFile, true), true) << program << std::endl;
 
     // backend
+    auto backend = new FPGA::FPGABackend(options);
+
     if (!options.outputFile.isNullOrEmpty()) {
-            JSONGenerator(*openFile(options.outputFile, true), true) << program << std::endl;
-            /*std::ostream* out = openFile(options.outputFile, false);
-            if (out != nullptr) {
-                //backend->serialize(*out);
-                
-                out->flush();
-            }*/
+        std::ostream* out = openFile(options.outputFile, false);
+        if (out != nullptr) {
+            backend->serialize(*out);
+            out->flush();
         }
+        else {
+            ::error(ErrorType::ERR_IO, "%s: Can't open file", options.outputFile);
+            return 1;
+        }
+    }
 
 
     return ::errorCount() > 0;
