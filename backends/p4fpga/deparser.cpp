@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include "backends/p4fpga/deparser.h"
+#include "ir/ir-generated.h"
 #include "lib/json.h"
 #include "p4fpga/JsonObjects.h"
 #include <string>
@@ -39,7 +40,12 @@ Util::JsonArray* DeparserConverter::convertDeparserBody(const IR::Vector<IR::Sta
             uniqueID++;
             continue;
         }else{
-            jsonBody->append(s->toString());
+            if(s->is<IR::MethodCallStatement>()){
+                auto mc = s->to<IR::MethodCallStatement>()->methodCall;
+                auto arg = mc->arguments->at(0);
+                jsonBody->append(arg->toString());
+            }
+            else jsonBody->append(s->toString());
         }
     }
     return jsonBody;
