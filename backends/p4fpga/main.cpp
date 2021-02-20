@@ -21,6 +21,7 @@ limitations under the License.
 #include "frontends/common/applyOptionsPragmas.h"
 #include "frontends/common/parseInput.h"
 #include "frontends/p4/frontend.h"
+#include "frontends/p4/evaluator/evaluator.h"
 #include "lib/error_catalog.h"
 #include "lib/nullstream.h"
 #include "backends/p4fpga/p4fpga.h"
@@ -30,6 +31,7 @@ limitations under the License.
 #include "lib/gc.h"
 #include "lib/compile_context.h"
 #include "lib/error.h"
+#include "p4fpga/midend.h"
 
 int main(int argc, char *const argv[]) {
     setup_gc_logging();
@@ -63,14 +65,27 @@ int main(int argc, char *const argv[]) {
     }
     if (program == nullptr || ::errorCount() > 0)
         return 1;
-
+    
     // midend here
-    if (options.dumpJsonFile)
-        JSONGenerator(*openFile(options.dumpJsonFile, true), true) << program << std::endl;
+    FPGA::MidEnd midEnd(options);
+    midEnd.addDebugHook(hook);
+    try{
+         toplevel = midEnd.process(program);
+         if (::errorCount() > 1 || toplevel == nullptr ||
+            toplevel->getMain() == nullptr)
+            return 1;
+        if (options.dumpJsonFile)
+            JSONGenerator(*openFile(options.dumpJsonFile, true), true) << program << std::endl;
+    } catch (const std::exception &bug) {
+        std::cerr << bug.what() << std::endl;
+        return 1;
+    }
+    if (::errorCount() > 0)
+        return 1;
 
     // backend
     auto backend = new FPGA::FPGABackend(options);
-
+    backend->convert(toplevel);
     if (!options.outputFile.isNullOrEmpty()) {
         std::ostream* out = openFile(options.outputFile, false);
         if (out != nullptr) {

@@ -18,6 +18,7 @@ limitations under the License.
 #define P4FPGA_H_
 
 #include "backends/p4fpga/JsonObjects.h"
+#include "ir/ir.h"
 #include "lib/json.h"
 #include "backends/p4fpga/options.h"
 #include <cstring>
@@ -27,10 +28,12 @@ namespace FPGA {
     class FPGABackend {
         P4FpgaOptions& options;
         FPGA::FPGAJson* json;
-        public:
-            void serialize(std::ostream& out) const {json->serialize(out);};
-            FPGABackend(P4FpgaOptions& options);
-
+        unsigned busOutWidth;
+        
+    public:
+        void serialize(std::ostream& out) const {json->serialize(out);};
+        FPGABackend(P4FpgaOptions& options);
+        void convert(const IR::ToplevelBlock* tlb);
     };
 
 

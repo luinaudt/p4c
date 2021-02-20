@@ -18,10 +18,21 @@ limitations under the License.
 #include "lib/json.h"
 namespace FPGA {
 
-FPGAJson::FPGAJson(FPGA::P4FpgaOptions& options){
-    outputWidth = options.outBusWidth;
-    toplevel = new Util::JsonObject();
-    toplevel->emplace("outputBus", outputWidth);
-}
+    FPGAJson::FPGAJson(FPGA::P4FpgaOptions& options){
+        toplevel = new Util::JsonObject();
+        parser   = new Util::JsonObject();
+        control  = new Util::JsonObject();
+        //deparser = new Util::JsonObject();
+        // place top level parameters.
+        toplevel->emplace("outputBus", options.outBusWidth);
+        toplevel->emplace("parser", parser);
+        toplevel->emplace("control", control);
+        //toplevel->emplace("deparser", deparser);
+    }
+
+    void FPGAJson::setDeparser(Util::JsonObject* jo){
+        deparser = jo;
+        toplevel->emplace("deparser", deparser);
+    }
 
 }

@@ -21,10 +21,14 @@ set (P4FPGA_SRCS
   p4fpga.cpp
   JsonObjects.cpp
   main.cpp
+  deparser.cpp
+  midend.cpp
   )
 set (P4FPGA_HDRS
   p4fpga.h
   options.h
+  midend.h
+  deparser.h
   JsonObjects.h
   )
 
