@@ -18,11 +18,13 @@ limitations under the License.
 
 #include "ir/ir.h"
 #include "ir/visitor.h"
+#include "lib/cstring.h"
 #include "lib/json.h"
 #include "frontends/p4/typeMap.h"
 #include "frontends/common/resolveReferences/referenceMap.h"
 #include "frontends/p4/coreLibrary.h"
 #include "backends/p4fpga/JsonObjects.h"
+#include "lib/ordered_set.h"
 
 
 namespace FPGA {
@@ -30,11 +32,13 @@ class DeparserConverter : public Inspector {
     cstring                name;
     P4::P4CoreLibrary&     corelib;
     FPGA::FPGAJson*        json;
+    ordered_set<cstring>* state_set;
+    Util::JsonArray*       links;
     unsigned               uniqueID;
     protected:
         Util::JsonObject* convertDeparser(const IR::P4Control* ctrl);
-        Util::JsonArray* convertDeparserBody(const IR::Vector<IR::StatOrDecl>* body);
-
+        void convertDeparserBody(const IR::Vector<IR::StatOrDecl>* body);
+        void convertStatement(const IR::StatOrDecl* s);
     public:
         bool preorder(const IR::P4Control* ctrl);
 
