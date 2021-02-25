@@ -16,11 +16,13 @@ limitations under the License.
 
 import networkx
 import json
+import getopt
+import sys
 
-def convert(fileName = "a.out", outfileName= "a.dot", deparserName = "deparser")
+def convert(fileName = "a.out", outfileName= "a.dot", deparserName = "deparser"):
     with open(fileName,'r') as f:
         deparser = json.load(f)[deparserName]
-    graph = networkx.readwrite.json_graph.node_link_graph(deparser)
+    graph = networkx.readwrite.json_graph.node_link_graph(deparser, directed=True)
     networkx.drawing.nx_agraph.write_dot(graph, outfileName)
 
 def main(prog, argv):
@@ -44,7 +46,7 @@ def main(prog, argv):
             deparserName = arg
         elif opt in ("-i", "--inputFile"):
             inputFile = arg
-    convert(fileName, outfileName, deparserName)
+    convert(inputFile, outputFile, deparserName)
     
 
 if __name__ == "__main__":
