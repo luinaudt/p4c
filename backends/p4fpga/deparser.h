@@ -17,6 +17,7 @@ limitations under the License.
 #define BACKENDS_FPGA_DEPARSER_H_
 
 #include "ir/ir.h"
+#include "ir/vector.h"
 #include "ir/visitor.h"
 #include "lib/cstring.h"
 #include "lib/json.h"
@@ -25,25 +26,32 @@ limitations under the License.
 #include "frontends/p4/coreLibrary.h"
 #include "backends/p4fpga/JsonObjects.h"
 #include "lib/ordered_set.h"
+#include <stack>
+#include <vector>
 
 
 namespace FPGA {
+
 class DeparserConverter : public Inspector {
     cstring                name;
     P4::P4CoreLibrary&     corelib;
     FPGA::FPGAJson*        json;
     ordered_set<cstring>* state_set;
+    std::vector<cstring>*  currentState;
+    std::vector<cstring>*  previousState;
     Util::JsonArray*       links;
-    unsigned               uniqueID;
+
     protected:
         Util::JsonObject* convertDeparser(const IR::P4Control* ctrl);
         void convertDeparserBody(const IR::Vector<IR::StatOrDecl>* body);
         void convertStatement(const IR::StatOrDecl* s);
+        void insertTransition(); // links each previous state with each current states
     public:
         bool preorder(const IR::P4Control* ctrl);
+        bool preorder(const IR::IfStatement* cond);
 
         explicit DeparserConverter(FPGA::FPGAJson* json, cstring name = "deparser")
-            : name(name), uniqueID(0), corelib(P4::P4CoreLibrary::instance), json(json) {
+            : name(name), corelib(P4::P4CoreLibrary::instance), json(json) {
             setName("DeparserConverter");
         }
     };

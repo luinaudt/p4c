@@ -15,14 +15,17 @@ limitations under the License.
 */
 #include "backends/p4fpga/deparser.h"
 #include "ir/indexed_vector.h"
-#include "ir/ir-generated.h"
 #include "ir/vector.h"
+#include "lib/cstring.h"
 #include "lib/json.h"
 #include "lib/ordered_set.h"
+#include "p4/methodInstance.h"
 #include "p4fpga/JsonObjects.h"
 #include <iostream>
 #include <ostream>
+#include <stack>
 #include <string>
+#include <vector>
 
 namespace FPGA {
 Util::JsonObject* DeparserConverter::convertDeparser(const IR::P4Control* ctrl){
@@ -30,13 +33,60 @@ Util::JsonObject* DeparserConverter::convertDeparser(const IR::P4Control* ctrl){
     dep->emplace("name", ctrl->getName());
     convertDeparserBody(&ctrl->body->components);
     Util::JsonArray*  state = new Util::JsonArray();
-    state_set->insert("end");
+// insert end state
+    previousState = currentState;
+    currentState = new std::vector<cstring>();
+    currentState->push_back("<end>");
+    insertTransition(); 
+    state_set->insert("<end>");
     for(auto i : *state_set){
-        state->append(i);
+        Util::JsonObject* tmp = new Util::JsonObject();
+        tmp->emplace("id", i);
+        state->append(tmp);
     }
     dep->emplace("nodes", state);
     dep->emplace("links", links);
     return dep;
+}
+
+void DeparserConverter::insertTransition(){
+    for(auto ps : *previousState){
+        for(auto cs : *currentState){
+            auto *transition = new Util::JsonObject();
+            transition->emplace("source", ps);
+            transition->emplace("target", cs);
+            links->append(transition);
+        }
+    }   
+}
+
+bool DeparserConverter::preorder(const IR::IfStatement* block){
+    auto prevState = currentState;
+    auto condTrue = block->ifTrue->to<IR::BlockStatement>();
+    if (condTrue) convertDeparserBody(&condTrue->components);
+    else if (block->ifTrue->is<IR::StatOrDecl>()) convertStatement(block->ifTrue);
+    auto lastState = currentState;
+    currentState = prevState;
+    auto condFalse = block->ifFalse->to<IR::BlockStatement>();
+    if (condFalse) {
+        convertDeparserBody(&condFalse->components);
+        for(auto cs : *currentState){
+            lastState->push_back(cs);
+        }
+    }
+    else if (block->ifFalse->is<IR::StatOrDecl>()){
+        convertStatement(block->ifFalse);
+        for(auto cs : *currentState){
+            lastState->push_back(cs);
+        }
+    }
+    else{
+        for(auto cs : *prevState){
+            lastState->push_back(cs);
+        }
+    }
+    currentState = lastState;
+    return false;
 }
 
 void DeparserConverter::convertStatement(const IR::StatOrDecl* s){
@@ -45,8 +95,19 @@ void DeparserConverter::convertStatement(const IR::StatOrDecl* s){
         std::cout << "method call : " << mc << std::endl;
         auto arg = mc->arguments->at(0);
         state_set->insert(arg->toString());
+        previousState = currentState;
+        currentState = new std::vector<cstring>;
+        currentState->push_back(arg->toString());
+        insertTransition();
     }
-    else state_set->insert("else " + s->toString()); // DEVHELP - for info of unprocessed nodes
+    else if (s->is<IR::IfStatement>()) {
+        auto cond = s->to<IR::IfStatement>();
+        visit(cond);
+    }
+    else{
+        std::cout <<"in convert statement " << s << std::endl;
+        state_set->insert("else " + s->toString()); // DEVHELP - for info of unprocessed nodes
+    }
 }
 
 void DeparserConverter::convertDeparserBody(const IR::Vector<IR::StatOrDecl>* body){
@@ -57,23 +118,24 @@ void DeparserConverter::convertDeparserBody(const IR::Vector<IR::StatOrDecl>* bo
             continue;
         }
         if(s->is<IR::IfStatement>()){
-            auto block = s->to<IR::IfStatement>();
-            auto condTrue = block->ifTrue->to<IR::BlockStatement>();
-            if (condTrue) convertDeparserBody(&condTrue->components);
-            else if (block->ifTrue->is<IR::StatOrDecl>()) convertStatement(block->ifTrue);
-            auto condFalse = block->ifFalse->to<IR::BlockStatement>();
-            if (condFalse) convertDeparserBody(&condFalse->components);
-            else if (block->ifFalse->is<IR::StatOrDecl>()) convertStatement(block->ifFalse);
+            auto cond = s->to<IR::IfStatement>();
+            visit(cond);
         }
-        else if(s->is<IR::StatOrDecl>()) convertStatement(s);
-        else state_set->insert("else " + s->toString()); // DEVHELP - for info of unprocessed nodes       
+        else if(s->is<IR::StatOrDecl>()){
+            std::cout << "state in convert deparser body : " << s << std::endl;
+            convertStatement(s);
+        }
     }
 }
 
 bool DeparserConverter::preorder(const IR::P4Control* control) {
     links = new Util::JsonArray();
     state_set = new ordered_set<cstring>();
-    state_set->insert("start");
+    previousState = new std::vector<cstring>();
+    auto startState = cstring("<start>");
+    state_set->insert(startState);
+    currentState = new std::vector<cstring>();
+    currentState->push_back(startState);    
     auto deparserJson = convertDeparser(control);
     json->setDeparser(deparserJson);
     return false;
