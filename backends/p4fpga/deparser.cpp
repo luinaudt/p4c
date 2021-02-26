@@ -31,7 +31,7 @@ namespace FPGA {
 Util::JsonObject* DeparserConverter::convertDeparser(const IR::P4Control* ctrl){
     Util::JsonObject* dep = new Util::JsonObject();
     dep->emplace("name", ctrl->getName());
-    convertDeparserBody(&ctrl->body->components);
+    convertBody(&ctrl->body->components);
     Util::JsonArray*  state = new Util::JsonArray();
 // insert end state
     previousState = currentState;
@@ -63,13 +63,13 @@ void DeparserConverter::insertTransition(){
 bool DeparserConverter::preorder(const IR::IfStatement* block){
     auto prevState = currentState;
     auto condTrue = block->ifTrue->to<IR::BlockStatement>();
-    if (condTrue) convertDeparserBody(&condTrue->components);
+    if (condTrue) convertBody(&condTrue->components);
     else if (block->ifTrue->is<IR::StatOrDecl>()) convertStatement(block->ifTrue);
     auto lastState = currentState;
     currentState = prevState;
     auto condFalse = block->ifFalse->to<IR::BlockStatement>();
     if (condFalse) {
-        convertDeparserBody(&condFalse->components);
+        convertBody(&condFalse->components);
         for(auto cs : *currentState){
             lastState->push_back(cs);
         }
@@ -110,11 +110,11 @@ void DeparserConverter::convertStatement(const IR::StatOrDecl* s){
     }
 }
 
-void DeparserConverter::convertDeparserBody(const IR::Vector<IR::StatOrDecl>* body){
-    std::cout << "current block : " << body << std::endl;
+void DeparserConverter::convertBody(const IR::Vector<IR::StatOrDecl>* body){
+    std::cout << "current block : " << body << std::endl; // DEVHELP
     for (auto s : *body) {
         if (auto block = s->to<IR::BlockStatement>()) {
-            convertDeparserBody(&block->components);
+            convertBody(&block->components);
             continue;
         }
         if(s->is<IR::IfStatement>()){

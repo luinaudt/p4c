@@ -43,7 +43,7 @@ class DeparserConverter : public Inspector {
 
     protected:
         Util::JsonObject* convertDeparser(const IR::P4Control* ctrl);
-        void convertDeparserBody(const IR::Vector<IR::StatOrDecl>* body);
+        void convertBody(const IR::Vector<IR::StatOrDecl>* body);
         void convertStatement(const IR::StatOrDecl* s);
         void insertTransition(); // links each previous state with each current states
     public:
