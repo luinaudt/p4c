@@ -19,9 +19,12 @@ limitations under the License.
 
 #include "frontends/common/resolveReferences/referenceMap.h"
 #include "ir/ir.h"
+#include "midend/expandEmit.h"
 #include "frontends/common/options.h"
 #include "frontends/p4/typeMap.h"
 #include "midend/convertEnums.h"
+#include "backends/p4fpga/emitCond.h"
+
 
 namespace FPGA {
 /**

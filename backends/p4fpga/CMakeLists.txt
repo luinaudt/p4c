@@ -23,10 +23,12 @@ set (P4FPGA_SRCS
   main.cpp
   depGraphCloser.cpp
   deparser.cpp
+  emitCond.cpp
   midend.cpp
   )
 set (P4FPGA_HDRS
   p4fpga.h
+  emitCond.h
   depGraphCloser.h
   options.h
   midend.h

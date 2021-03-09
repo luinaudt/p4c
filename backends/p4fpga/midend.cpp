@@ -18,6 +18,7 @@ limitations under the License.
 #include "frontends/p4/evaluator/evaluator.h"
 #include "frontends/p4/typeChecking/typeChecker.h"
 #include "midend/fillEnumMap.h"
+#include "p4fpga/emitCond.h"
 
 namespace FPGA {
     MidEnd::MidEnd(CompilerOptions& options){
@@ -29,6 +30,8 @@ namespace FPGA {
             new P4::TypeChecking(&refMap, &typeMap),
             convertEnums,
             new VisitFunctor([this, convertEnums]() { enumMap = convertEnums->getEnumMapping(); }),*/
+            new P4::ExpandEmit(&refMap, &typeMap),
+            new EmitCond(&refMap, &typeMap),
             evaluator,
             new VisitFunctor([this, evaluator]() { // set toplevel
                                 toplevel = evaluator->getToplevelBlock(); }) 

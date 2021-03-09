@@ -84,7 +84,7 @@ int main(int argc, char *const argv[]) {
         return 1;
 
     // backend
-    auto backend = new FPGA::FPGABackend(options);
+    auto backend = new FPGA::FPGABackend(options, &midEnd.refMap, &midEnd.typeMap);
     backend->convert(toplevel);
     if (!options.outputFile.isNullOrEmpty()) {
         std::ostream* out = openFile(options.outputFile, false);
