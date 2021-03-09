@@ -21,23 +21,27 @@ limitations under the License.
 #include "frontends/p4/coreLibrary.h"
 #include "frontends/common/resolveReferences/referenceMap.h"
 #include "p4/typeMap.h"
+#include <iostream>
 
 namespace FPGA {
-    class DeparserGraphCloser : Transform{
+    class DeparserGraphCloser : public Transform{
         P4::P4CoreLibrary&     corelib;
         P4::ReferenceMap* refMap;
         P4::TypeMap* typeMap;
         
         protected:
             const IR::Node* convertBody(const IR::Vector<IR::StatOrDecl>* body);
-
+            
         public:
-        const IR::Node* postorder(const IR::P4Control* ctrl);
-        bool preorder(const IR::IfStatement* cond);
-        bool preorder(const IR::StatOrDecl* s);
+        const IR::Node* preorder(IR::P4Control* ctrl);
+        
+        const IR::Node* postorder(IR::MethodCallStatement* s);
+        const IR::Node* postorder(IR::P4Control* ctrl);
+        const IR::Node* preorder(IR::IfStatement* cond);
+        const IR::Node* preorder(IR::StatOrDecl* s);
         explicit DeparserGraphCloser(P4::ReferenceMap* refMap, P4::TypeMap* typeMap) 
         :  corelib(P4::P4CoreLibrary::instance), refMap(refMap), typeMap(typeMap)
-            { CHECK_NULL(refMap); CHECK_NULL(typeMap); setName("DoExpandEmit"); }
+            { CHECK_NULL(refMap); CHECK_NULL(typeMap); setName("CloseDeparserGraph");}
         };
 }
 

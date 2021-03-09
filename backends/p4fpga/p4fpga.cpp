@@ -18,11 +18,13 @@ limitations under the License.
 #include "common/options.h"
 #include "ir/ir-generated.h"
 #include "backends/p4fpga/deparser.h"
+#include "backends/p4fpga/depGraphCloser.h"
 #include <iostream>
 
 namespace FPGA{
-    FPGABackend::FPGABackend(FPGA::P4FpgaOptions& options) : 
-                    options(options) {
+    FPGABackend::FPGABackend(FPGA::P4FpgaOptions& options, 
+                        P4::ReferenceMap* refMap, P4::TypeMap* typeMap) : 
+                    options(options), refMap(refMap), typeMap(typeMap) {
         json = new FPGA::FPGAJson(options);
         busOutWidth = options.outBusWidth;
     }
@@ -31,10 +33,10 @@ namespace FPGA{
         auto main = tlb->getMain();
         auto deparser = main->findParameterValue("dep");
         if (!main) return;
-       // for(auto s : deparser->to<IR::P4Control>()->body->components)
+       //auto depMod = new DeparserGraphCloser(refMap, typeMap);
+       //deparser->to<IR::ControlBlock>()->container->apply(*depMod);
        auto depConv = new DeparserConverter(json);
        deparser->to<IR::ControlBlock>()->container->apply(*depConv);
-       std::cout << deparser << std::endl; // DEVHELP 
     }
     
 }

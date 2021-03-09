@@ -23,16 +23,24 @@ limitations under the License.
 #include "backends/p4fpga/options.h"
 #include <cstring>
 #include <ostream>
+#include "frontends/common/resolveReferences/referenceMap.h"
+#include "frontends/p4/typeMap.h"
+#include "midend/convertEnums.h"
+
 
 namespace FPGA {
     class FPGABackend {
         P4FpgaOptions& options;
         FPGA::FPGAJson* json;
         unsigned busOutWidth;
+        P4::ReferenceMap*    refMap;
+        P4::TypeMap*         typeMap;
+        P4::ConvertEnums::EnumMapping enumMap;
         
     public:
         void serialize(std::ostream& out) const {json->serialize(out);};
-        FPGABackend(P4FpgaOptions& options);
+        FPGABackend(P4FpgaOptions& options, 
+                    P4::ReferenceMap* refMap, P4::TypeMap* typeMap);
         void convert(const IR::ToplevelBlock* tlb);
     };
 

@@ -15,22 +15,36 @@ limitations under the License.
 */
 
 #include "backends/p4fpga/depGraphCloser.h"
+#include "ir/ir-generated.h"
 #include "ir/node.h"
 #include "lib/exceptions.h"
 #include <iostream>
 
 namespace FPGA {
     
-     const IR::Node* DeparserGraphCloser::postorder(const IR::P4Control* ctrl){
+    const IR::Node*  DeparserGraphCloser::preorder(IR::P4Control* ctrl){
+        std::cout << "closing graph " << std::endl;
+        return ctrl;
+    }
+    const IR::Node* DeparserGraphCloser::postorder(IR::P4Control* ctrl){
+        std::cout << "closing graph postorder" << std::endl;
         convertBody(&ctrl->body->components);
         return nullptr;
     }
-    bool DeparserGraphCloser::preorder(const IR::IfStatement* cond){
-        //TODO 
+    const IR::Node* DeparserGraphCloser::preorder(IR::IfStatement* cond){
+        //TODO
         P4C_UNIMPLEMENTED("if statement in deparser");
-        return false;
+        return cond;
     }
-    bool DeparserGraphCloser::preorder(const IR::StatOrDecl* s){
+    const IR::Node* DeparserGraphCloser::postorder(IR::MethodCallStatement* s){
+        auto cond = new IR::Constant(1);
+        const IR::EmptyStatement* fStatement = new IR::EmptyStatement();
+        std::cout<< "postOrder " << s->toString() << std::endl;
+        const IR::IfStatement* newNode = new IR::IfStatement(cond, s, fStatement);
+        return newNode;
+    }
+    const IR::Node* DeparserGraphCloser::preorder(IR::StatOrDecl* s){
+        std::cout << "in state or decl" << std::endl;
         if(s->is<IR::MethodCallStatement>()){
             auto mc = s->to<IR::MethodCallStatement>()->methodCall;
         }
@@ -38,9 +52,10 @@ namespace FPGA {
             auto cond = s->to<IR::IfStatement>();
             visit(cond);
         }
-        return false;
+        return s;
     }
-    const IR::Node* DeparserGraphCloser::convertBody(const IR::Vector<IR::StatOrDecl>* body){; 
+
+    const IR::Node* DeparserGraphCloser::convertBody(const IR::Vector<IR::StatOrDecl>* body){ 
     for (auto s : *body) {
         if (auto block = s->to<IR::BlockStatement>()) {
             convertBody(&block->components);
