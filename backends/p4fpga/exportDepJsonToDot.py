@@ -29,6 +29,10 @@ def main(prog, argv):
     inputFile = "a.out"
     outputFile = "a.json"
     deparserName = "deparser"
+    if len(argv) <=0 :
+        print("argument are required")
+        print(f"{prog} [-i inputFile] [-o outputFile] [--deparserName name]")
+        sys.exit(2)
     try:
         opts, _= getopt.getopt(argv, "ho:i:",
                                         ["help", "outputFile", "inputFile",
