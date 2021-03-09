@@ -92,7 +92,6 @@ bool DeparserConverter::preorder(const IR::IfStatement* block){
 void DeparserConverter::convertStatement(const IR::StatOrDecl* s){
     if(s->is<IR::MethodCallStatement>()){
         auto mc = s->to<IR::MethodCallStatement>()->methodCall;
-        std::cout << "method call : " << mc << std::endl;
         auto arg = mc->arguments->at(0);
         state_set->insert(arg->toString());
         previousState = currentState;
@@ -105,13 +104,11 @@ void DeparserConverter::convertStatement(const IR::StatOrDecl* s){
         visit(cond);
     }
     else{
-        std::cout <<"in convert statement " << s << std::endl;
         state_set->insert("else " + s->toString()); // DEVHELP - for info of unprocessed nodes
     }
 }
 
 void DeparserConverter::convertBody(const IR::Vector<IR::StatOrDecl>* body){
-    std::cout << "current block : " << body << std::endl; // DEVHELP
     for (auto s : *body) {
         if (auto block = s->to<IR::BlockStatement>()) {
             convertBody(&block->components);
@@ -122,7 +119,6 @@ void DeparserConverter::convertBody(const IR::Vector<IR::StatOrDecl>* body){
             visit(cond);
         }
         else if(s->is<IR::StatOrDecl>()){
-            std::cout << "state in convert deparser body : " << s << std::endl;
             convertStatement(s);
         }
     }
