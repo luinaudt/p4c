@@ -37,6 +37,9 @@ namespace FPGA {
                                 toplevel = evaluator->getToplevelBlock(); }) 
         };
         addPasses(midendPasses);
+        if (options.excludeMidendPasses) {
+            removePasses(options.passesToExcludeMidend);
+        }
 
     }
 
