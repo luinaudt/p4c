@@ -45,10 +45,12 @@ class DeparserConverter : public Inspector {
         Util::JsonObject* convertDeparser(const IR::P4Control* ctrl);
         void convertBody(const IR::Vector<IR::StatOrDecl>* body);
         void convertStatement(const IR::StatOrDecl* s);
-        void insertTransition(); // links each previous state with each current states
+        void insertTransition();
+        void insertTransition(cstring cond); // links each previous state with each current states
     public:
         bool preorder(const IR::P4Control* ctrl);
         bool preorder(const IR::IfStatement* cond);
+        bool preorder(const IR::StatOrDecl* s);
 
         explicit DeparserConverter(FPGA::FPGAJson* json, cstring name = "deparser")
             : name(name), corelib(P4::P4CoreLibrary::instance), json(json) {

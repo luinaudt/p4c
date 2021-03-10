@@ -15,6 +15,7 @@ limitations under the License.
 */
 #include "backends/p4fpga/deparser.h"
 #include "ir/indexed_vector.h"
+#include "ir/ir-generated.h"
 #include "ir/vector.h"
 #include "lib/cstring.h"
 #include "lib/json.h"
@@ -48,13 +49,16 @@ Util::JsonObject* DeparserConverter::convertDeparser(const IR::P4Control* ctrl){
     dep->emplace("links", links);
     return dep;
 }
-
 void DeparserConverter::insertTransition(){
+    insertTransition("");
+}
+void DeparserConverter::insertTransition(cstring cond){
     for(auto ps : *previousState){
         for(auto cs : *currentState){
             auto *transition = new Util::JsonObject();
             transition->emplace("source", ps);
             transition->emplace("target", cs);
+            transition->emplace("label", cond);
             links->append(transition);
         }
     }   
@@ -64,7 +68,7 @@ bool DeparserConverter::preorder(const IR::IfStatement* block){
     auto prevState = currentState;
     auto condTrue = block->ifTrue->to<IR::BlockStatement>();
     if (condTrue) convertBody(&condTrue->components);
-    else if (block->ifTrue->is<IR::StatOrDecl>()) convertStatement(block->ifTrue);
+    else if (block->ifTrue->is<IR::StatOrDecl>()) visit(block->ifTrue);
     auto lastState = currentState;
     currentState = prevState;
     auto condFalse = block->ifFalse->to<IR::BlockStatement>();
@@ -75,7 +79,7 @@ bool DeparserConverter::preorder(const IR::IfStatement* block){
         }
     }
     else if (block->ifFalse->is<IR::StatOrDecl>()){
-        convertStatement(block->ifFalse);
+        visit(block->ifFalse);
         for(auto cs : *currentState){
             lastState->push_back(cs);
         }
@@ -88,7 +92,17 @@ bool DeparserConverter::preorder(const IR::IfStatement* block){
     currentState = lastState;
     return false;
 }
-
+bool DeparserConverter::preorder(const IR::StatOrDecl* s){
+    convertStatement(s);
+    auto prev = getContext()->node;
+    if(auto cond = prev->to<IR::IfStatement>()){
+        insertTransition(cond->condition->toString());
+    }
+    else {
+        insertTransition();
+    }
+    return false;
+}
 void DeparserConverter::convertStatement(const IR::StatOrDecl* s){
     if(s->is<IR::MethodCallStatement>()){
         auto mc = s->to<IR::MethodCallStatement>()->methodCall;
@@ -97,7 +111,6 @@ void DeparserConverter::convertStatement(const IR::StatOrDecl* s){
         previousState = currentState;
         currentState = new std::vector<cstring>;
         currentState->push_back(arg->toString());
-        insertTransition();
     }
     else if (s->is<IR::IfStatement>()) {
         auto cond = s->to<IR::IfStatement>();
@@ -119,7 +132,7 @@ void DeparserConverter::convertBody(const IR::Vector<IR::StatOrDecl>* body){
             visit(cond);
         }
         else if(s->is<IR::StatOrDecl>()){
-            convertStatement(s);
+            visit(s);
         }
     }
 }
