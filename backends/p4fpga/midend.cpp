@@ -18,6 +18,7 @@ limitations under the License.
 #include "frontends/p4/evaluator/evaluator.h"
 #include "frontends/p4/typeChecking/typeChecker.h"
 #include "midend/fillEnumMap.h"
+#include "midend/parserUnroll.h"
 #include "p4fpga/emitCond.h"
 
 namespace FPGA {
@@ -26,10 +27,9 @@ namespace FPGA {
         auto convertEnums = new P4::ConvertEnums(&refMap, &typeMap, new EnumOn32Bits("v1model.p4"));        // evaluator compiler-design.pptx slide 77
         auto evaluator = new P4::EvaluatorPass(&refMap, &typeMap);
         std::initializer_list<Visitor *> midendPasses = {
-         /*   new P4::ResolveReferences(&refMap),
+            new P4::ResolveReferences(&refMap),
             new P4::TypeChecking(&refMap, &typeMap),
-            convertEnums,
-            new VisitFunctor([this, convertEnums]() { enumMap = convertEnums->getEnumMapping(); }),*/
+            convertEnums, new VisitFunctor([this, convertEnums]() { enumMap = convertEnums->getEnumMapping(); }),
             new P4::ExpandEmit(&refMap, &typeMap),
             new EmitCond(&refMap, &typeMap),
             evaluator,
