@@ -29,26 +29,7 @@ limitations under the License.
 #include <vector>
 
 namespace FPGA {
-Util::JsonObject* DeparserConverter::convertDeparser(const IR::P4Control* ctrl){
-    Util::JsonObject* dep = new Util::JsonObject();
-    dep->emplace("name", ctrl->getName());
-    convertBody(&ctrl->body->components);
-    Util::JsonArray*  state = new Util::JsonArray();
-// insert end state
-    previousState = currentState;
-    currentState = new std::vector<cstring>();
-    currentState->push_back("<end>");
-    insertTransition(); 
-    state_set->insert("<end>");
-    for(auto i : *state_set){
-        Util::JsonObject* tmp = new Util::JsonObject();
-        tmp->emplace("id", i);
-        state->append(tmp);
-    }
-    dep->emplace("nodes", state);
-    dep->emplace("links", links);
-    return dep;
-}
+
 void DeparserConverter::insertTransition(){
     insertTransition("");
 }
@@ -90,10 +71,15 @@ bool DeparserConverter::preorder(const IR::IfStatement* block){
         }
     }
     currentState = lastState;
-    return false;
+    return true;
 }
-bool DeparserConverter::preorder(const IR::StatOrDecl* s){
-    convertStatement(s);
+bool DeparserConverter::preorder(const IR::MethodCallStatement* s){
+    auto mc = s->methodCall;
+    auto arg = mc->arguments->at(0);
+    state_set->insert(arg->toString());
+    previousState = currentState;
+    currentState = new std::vector<cstring>;
+    currentState->push_back(arg->toString());
     auto prev = getContext()->node;
     if(auto cond = prev->to<IR::IfStatement>()){
         insertTransition(cond->condition->toString());
@@ -101,25 +87,20 @@ bool DeparserConverter::preorder(const IR::StatOrDecl* s){
     else {
         insertTransition();
     }
-    return false;
+    return true;
 }
-void DeparserConverter::convertStatement(const IR::StatOrDecl* s){
-    if(s->is<IR::MethodCallStatement>()){
-        auto mc = s->to<IR::MethodCallStatement>()->methodCall;
-        auto arg = mc->arguments->at(0);
-        state_set->insert(arg->toString());
-        previousState = currentState;
-        currentState = new std::vector<cstring>;
-        currentState->push_back(arg->toString());
+
+bool DeparserConverter::preorder(const IR::StatOrDecl* s){
+    auto prev = getContext()->node;
+    if(auto cond = prev->to<IR::IfStatement>()){
+        insertTransition(cond->condition->toString());
     }
-    else if (s->is<IR::IfStatement>()) {
-        auto cond = s->to<IR::IfStatement>();
-        visit(cond);
+    else {
+        insertTransition();
     }
-    else{
-        state_set->insert("else " + s->toString()); // DEVHELP - for info of unprocessed nodes
-    }
+    return true;
 }
+
 
 void DeparserConverter::convertBody(const IR::Vector<IR::StatOrDecl>* body){
     for (auto s : *body) {
@@ -145,8 +126,25 @@ bool DeparserConverter::preorder(const IR::P4Control* control) {
     state_set->insert(startState);
     currentState = new std::vector<cstring>();
     currentState->push_back(startState);    
-    auto deparserJson = convertDeparser(control);
-    json->setDeparser(deparserJson);
-    return false;
+    return true;
+}
+void DeparserConverter::postorder(const IR::P4Control* control) {
+    Util::JsonObject* dep = new Util::JsonObject();
+    dep->emplace("name", control->getName());
+    Util::JsonArray*  state = new Util::JsonArray();
+// insert end state
+    previousState = currentState;
+    currentState = new std::vector<cstring>();
+    currentState->push_back("<end>");
+    insertTransition(); 
+    state_set->insert("<end>");
+    for(auto i : *state_set){
+        Util::JsonObject* tmp = new Util::JsonObject();
+        tmp->emplace("id", i);
+        state->append(tmp);
+    }
+    dep->emplace("nodes", state);
+    dep->emplace("links", links);
+    json->setDeparser(dep);
 }
 }
