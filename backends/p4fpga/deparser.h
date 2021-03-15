@@ -16,7 +16,6 @@ limitations under the License.
 #ifndef BACKENDS_FPGA_DEPARSER_H_
 #define BACKENDS_FPGA_DEPARSER_H_
 
-#include "ir/ir-generated.h"
 #include "ir/ir.h"
 #include "ir/vector.h"
 #include "ir/visitor.h"
@@ -37,14 +36,14 @@ class DeparserConverter : public Inspector {
     cstring                name;
     P4::P4CoreLibrary&     corelib;
     FPGA::FPGAJson*        json;
-    ordered_set<cstring>* state_set;
+    ordered_set<cstring>*  state_set;
+    std::vector<cstring>*  condList; // list of condition
     std::vector<cstring>*  currentState;
     std::vector<cstring>*  previousState;
     Util::JsonArray*       links;
 
     protected:
         Util::JsonObject* convertDeparser(const IR::P4Control* ctrl);
-        void convertBody(const IR::Vector<IR::StatOrDecl>* body);
         void insertTransition();
         void insertTransition(cstring cond); // links each previous state with each current states
     public:

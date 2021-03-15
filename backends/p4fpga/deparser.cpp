@@ -34,12 +34,18 @@ void DeparserConverter::insertTransition(){
     insertTransition("");
 }
 void DeparserConverter::insertTransition(cstring cond){
+    cstring label = "";
+    if(condList->size() > 0){
+        for(auto c : *condList){
+            label += c + " ";
+        }
+    }
     for(auto ps : *previousState){
         for(auto cs : *currentState){
             auto *transition = new Util::JsonObject();
             transition->emplace("source", ps);
             transition->emplace("target", cs);
-            transition->emplace("label", cond);
+            transition->emplace("label", label);
             links->append(transition);
         }
     }   
@@ -47,30 +53,22 @@ void DeparserConverter::insertTransition(cstring cond){
 
 bool DeparserConverter::preorder(const IR::IfStatement* block){
     auto prevState = currentState;
-    auto condTrue = block->ifTrue->to<IR::BlockStatement>();
-    if (condTrue) convertBody(&condTrue->components);
-    else if (block->ifTrue->is<IR::StatOrDecl>()) visit(block->ifTrue);
-    auto lastState = currentState;
-    currentState = prevState;
-    auto condFalse = block->ifFalse->to<IR::BlockStatement>();
-    if (condFalse) {
-        convertBody(&condFalse->components);
-        for(auto cs : *currentState){
-            lastState->push_back(cs);
-        }
-    }
-    else if (block->ifFalse->is<IR::StatOrDecl>()){
+    condList->push_back(block->condition->toString());
+    visit(block->ifTrue);
+    if (block->ifFalse != nullptr){
+        condList->pop_back();
+        condList->push_back("!" + block->condition->toString());
+        auto lastState = currentState;
+        currentState = prevState;
         visit(block->ifFalse);
-        for(auto cs : *currentState){
-            lastState->push_back(cs);
+        for(auto cs : *lastState){
+            currentState->push_back(cs);
         }
     }
-    else{
-        for(auto cs : *prevState){
-            lastState->push_back(cs);
-        }
+    for(auto cs : *prevState){
+        currentState->push_back(cs);
     }
-    currentState = lastState;
+    condList->pop_back();
     return true;
 }
 bool DeparserConverter::preorder(const IR::MethodCallStatement* s){
@@ -80,54 +78,28 @@ bool DeparserConverter::preorder(const IR::MethodCallStatement* s){
     previousState = currentState;
     currentState = new std::vector<cstring>;
     currentState->push_back(arg->toString());
-    auto prev = getContext()->node;
-    if(auto cond = prev->to<IR::IfStatement>()){
-        insertTransition(cond->condition->toString());
-    }
-    else {
-        insertTransition();
-    }
+    insertTransition();
     return true;
 }
 
 bool DeparserConverter::preorder(const IR::StatOrDecl* s){
-    auto prev = getContext()->node;
-    if(auto cond = prev->to<IR::IfStatement>()){
-        insertTransition(cond->condition->toString());
-    }
-    else {
-        insertTransition();
-    }
+    insertTransition();
     return true;
 }
 
-
-void DeparserConverter::convertBody(const IR::Vector<IR::StatOrDecl>* body){
-    for (auto s : *body) {
-        if (auto block = s->to<IR::BlockStatement>()) {
-            convertBody(&block->components);
-            continue;
-        }
-        if(s->is<IR::IfStatement>()){
-            auto cond = s->to<IR::IfStatement>();
-            visit(cond);
-        }
-        else if(s->is<IR::StatOrDecl>()){
-            visit(s);
-        }
-    }
-}
 
 bool DeparserConverter::preorder(const IR::P4Control* control) {
     links = new Util::JsonArray();
     state_set = new ordered_set<cstring>();
     previousState = new std::vector<cstring>();
+    condList = new std::vector<cstring>();
     auto startState = cstring("<start>");
     state_set->insert(startState);
     currentState = new std::vector<cstring>();
     currentState->push_back(startState);    
     return true;
 }
+
 void DeparserConverter::postorder(const IR::P4Control* control) {
     Util::JsonObject* dep = new Util::JsonObject();
     dep->emplace("name", control->getName());
