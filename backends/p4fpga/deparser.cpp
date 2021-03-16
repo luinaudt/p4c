@@ -81,20 +81,22 @@ bool DeparserConverter::preorder(const IR::IfStatement* block){
 bool DeparserConverter::preorder(const IR::MethodCallStatement* s){
     // TODO add verification for extern type : emit statement
     auto mi = P4::MethodInstance::resolve(s->methodCall, refMap, typeMap);
-    auto m = mi->to<P4::ExternMethod>();
+    auto em = mi->to<P4::ExternMethod>();
+    if (em->originalExternType->name.name == P4::P4CoreLibrary::instance.packetOut.name &&
+        em->method->name.name == P4::P4CoreLibrary::instance.packetOut.emit.name) {
+        auto mc = s->methodCall;
+        auto arg = mc->arguments->at(0);
+        auto hdrName = arg->toString();
+        auto hdrW = typeMap->getType(arg)->width_bits();
+        cstring stateName = hdrName + "_" + std::to_string(hdrW);
+        state_set->insert(stateName);
+        previousState = currentState;
+        currentState = new ordered_set<cstring>;
+        currentState->insert(stateName);
 
-    auto mc = s->methodCall;
-    auto arg = mc->arguments->at(0);
-    auto hdrName = arg->toString();
-    auto hdrW = typeMap->getType(arg)->width_bits();
-    cstring stateName = hdrName + "_" + std::to_string(hdrW);
-    state_set->insert(stateName);
-    previousState = currentState;
-    currentState = new ordered_set<cstring>;
-    currentState->insert(stateName);
-
-    insertTransition();
-    LOG1("emitting " << hdrName << " width " << hdrW << "bits");
+        insertTransition();
+        LOG1("emitting " << hdrName << " width " << hdrW << "bits");
+    }
     return true;
 }
 
