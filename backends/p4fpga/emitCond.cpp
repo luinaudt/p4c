@@ -16,8 +16,8 @@ limitations under the License.
 #include "backends/p4fpga/emitCond.h"
 #include "frontends/p4/coreLibrary.h"
 #include "frontends/p4/methodInstance.h"
-#include "ir/ir-generated.h"
 #include "ir/ir.h"
+#include "lib/log.h"
 
 namespace FPGA{
 
@@ -31,16 +31,15 @@ namespace FPGA{
                 return s;
             }
             auto arg0 = em->expr->arguments->at(0);
-            std::cout << "emitCond0" << std::endl;
             auto hdrT = typeMap->getType(arg0, true);
             if(hdrT->is<IR::Type_Header>()){
-                std::cout << "emitCond Hdr" << std::endl;
                 auto st = arg0->expression;
                 auto mc = new IR::Member(s->srcInfo, 
                                         st, IR::Type_Header::isValid);
-                std::cout << "emitCond member gen" << std::endl;
                 auto cond = new IR::MethodCallExpression(mc, new IR::Vector<IR::Argument>());
                 auto newCond = new IR::IfStatement(cond, s, nullptr);
+                LOG1("Convert " << s );
+                LOG2("to\n" << newCond);
                 return newCond;
             }
         }
