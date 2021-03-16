@@ -19,6 +19,7 @@ limitations under the License.
 #include "ir/vector.h"
 #include "lib/cstring.h"
 #include "lib/json.h"
+#include "lib/log.h"
 #include "lib/ordered_set.h"
 #include "p4/methodInstance.h"
 #include "p4fpga/JsonObjects.h"
@@ -40,33 +41,38 @@ void DeparserConverter::insertTransition(cstring cond){
             label += c + " ";
         }
     }
-    for(auto ps : *previousState){
-        for(auto cs : *currentState){
-            auto *transition = new Util::JsonObject();
-            transition->emplace("source", ps);
-            transition->emplace("target", cs);
-            transition->emplace("label", label);
-            links->append(transition);
+    if(previousState){
+        for(auto ps : *previousState){
+            for(auto cs : *currentState){
+                LOG1("insert link " << ps << " to " << cs);
+                auto *transition = new Util::JsonObject();
+                transition->emplace("source", ps);
+                transition->emplace("target", cs);
+                transition->emplace("label", label);
+                links->append(transition);
+            }
         }
     }   
 }
 
 bool DeparserConverter::preorder(const IR::IfStatement* block){
-    auto prevState = currentState;
+    auto oriState = currentState;
     condList->push_back(block->condition->toString());
     visit(block->ifTrue);
     if (block->ifFalse != nullptr){
         condList->pop_back();
         condList->push_back("!" + block->condition->toString());
-        auto lastState = currentState;
-        currentState = prevState;
+        auto stateTrue = currentState; // save state in True
+        currentState = oriState;
         visit(block->ifFalse);
-        for(auto cs : *lastState){
-            currentState->push_back(cs);
+        // append state true to false
+        for(auto cs : *stateTrue){
+            currentState->insert(cs);
         }
     }
-    for(auto cs : *prevState){
-        currentState->push_back(cs);
+    // append state ori to state true
+    for(auto cs : *oriState){
+        currentState->insert(cs);
     }
     condList->pop_back();
     return true;
@@ -76,27 +82,21 @@ bool DeparserConverter::preorder(const IR::MethodCallStatement* s){
     auto arg = mc->arguments->at(0);
     state_set->insert(arg->toString());
     previousState = currentState;
-    currentState = new std::vector<cstring>;
-    currentState->push_back(arg->toString());
+    currentState = new ordered_set<cstring>;
+    currentState->insert(arg->toString());
     insertTransition();
     return true;
 }
-
-bool DeparserConverter::preorder(const IR::StatOrDecl* s){
-    insertTransition();
-    return true;
-}
-
 
 bool DeparserConverter::preorder(const IR::P4Control* control) {
     links = new Util::JsonArray();
     state_set = new ordered_set<cstring>();
-    previousState = new std::vector<cstring>();
+    previousState = nullptr;
     condList = new std::vector<cstring>();
     auto startState = cstring("<start>");
     state_set->insert(startState);
-    currentState = new std::vector<cstring>();
-    currentState->push_back(startState);    
+    currentState = new ordered_set<cstring>();
+    currentState->insert(startState);    
     return true;
 }
 
@@ -106,8 +106,8 @@ void DeparserConverter::postorder(const IR::P4Control* control) {
     Util::JsonArray*  state = new Util::JsonArray();
 // insert end state
     previousState = currentState;
-    currentState = new std::vector<cstring>();
-    currentState->push_back("<end>");
+    currentState = new ordered_set<cstring>();
+    currentState->insert("<end>");
     insertTransition(); 
     state_set->insert("<end>");
     for(auto i : *state_set){

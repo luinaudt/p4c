@@ -36,10 +36,10 @@ class DeparserConverter : public Inspector {
     cstring                name;
     P4::P4CoreLibrary&     corelib;
     FPGA::FPGAJson*        json;
-    ordered_set<cstring>*  state_set;
     std::vector<cstring>*  condList; // list of condition
-    std::vector<cstring>*  currentState;
-    std::vector<cstring>*  previousState;
+    ordered_set<cstring>*  state_set; // list of states
+    ordered_set<cstring>*  currentState;
+    ordered_set<cstring>*  previousState;
     Util::JsonArray*       links;
 
     protected:
@@ -49,7 +49,6 @@ class DeparserConverter : public Inspector {
     public:
         bool preorder(const IR::P4Control* ctrl);
         bool preorder(const IR::IfStatement* cond);
-        bool preorder(const IR::StatOrDecl* s);
         bool preorder(const IR::MethodCallStatement* s);
         void postorder(const IR::P4Control* ctrl);
 
