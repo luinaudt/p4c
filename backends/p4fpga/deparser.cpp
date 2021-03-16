@@ -17,6 +17,7 @@ limitations under the License.
 #include "ir/indexed_vector.h"
 #include "ir/ir-generated.h"
 #include "ir/vector.h"
+#include "frontends/p4/methodInstance.h"
 #include "lib/cstring.h"
 #include "lib/json.h"
 #include "lib/log.h"
@@ -78,13 +79,22 @@ bool DeparserConverter::preorder(const IR::IfStatement* block){
     return true;
 }
 bool DeparserConverter::preorder(const IR::MethodCallStatement* s){
+    // TODO add verification for extern type : emit statement
+    auto mi = P4::MethodInstance::resolve(s->methodCall, refMap, typeMap);
+    auto m = mi->to<P4::ExternMethod>();
+
     auto mc = s->methodCall;
     auto arg = mc->arguments->at(0);
-    state_set->insert(arg->toString());
+    auto hdrName = arg->toString();
+    auto hdrW = typeMap->getType(arg)->width_bits();
+    cstring stateName = hdrName + "_" + std::to_string(hdrW);
+    state_set->insert(stateName);
     previousState = currentState;
     currentState = new ordered_set<cstring>;
-    currentState->insert(arg->toString());
+    currentState->insert(stateName);
+
     insertTransition();
+    LOG1("emitting " << hdrName << " width " << hdrW << "bits");
     return true;
 }
 

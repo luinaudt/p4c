@@ -42,6 +42,9 @@ class DeparserConverter : public Inspector {
     ordered_set<cstring>*  previousState;
     Util::JsonArray*       links;
 
+    P4::ReferenceMap* refMap;
+    P4::TypeMap* typeMap;
+
     protected:
         Util::JsonObject* convertDeparser(const IR::P4Control* ctrl);
         void insertTransition();
@@ -52,8 +55,9 @@ class DeparserConverter : public Inspector {
         bool preorder(const IR::MethodCallStatement* s);
         void postorder(const IR::P4Control* ctrl);
 
-        explicit DeparserConverter(FPGA::FPGAJson* json, cstring name = "deparser")
-            : name(name), corelib(P4::P4CoreLibrary::instance), json(json) {
+        explicit DeparserConverter(FPGA::FPGAJson* json, P4::ReferenceMap* refMap, P4::TypeMap* typeMap, cstring name = "deparser")
+            : name(name), corelib(P4::P4CoreLibrary::instance), json(json),
+            refMap(refMap), typeMap(typeMap) {
             setName("DeparserConverter");
         }
     };

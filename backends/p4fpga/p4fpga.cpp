@@ -35,7 +35,7 @@ namespace FPGA{
         if (!main) return;
        //auto depMod = new DeparserGraphCloser(refMap, typeMap);
        //deparser->to<IR::ControlBlock>()->container->apply(*depMod);
-       auto depConv = new DeparserConverter(json);
+       auto depConv = new DeparserConverter(json, refMap, typeMap);
        deparser->to<IR::ControlBlock>()->container->apply(*depConv);
     }
     
