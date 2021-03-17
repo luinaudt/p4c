@@ -19,6 +19,7 @@ limitations under the License.
 #include "ir/vector.h"
 #include "frontends/p4/methodInstance.h"
 #include "lib/cstring.h"
+#include "lib/indent.h"
 #include "lib/json.h"
 #include "lib/log.h"
 #include "lib/ordered_set.h"
@@ -43,9 +44,10 @@ void DeparserConverter::insertTransition(cstring cond){
         }
     }
     if(previousState){
+        LOG2("inserting links :" << IndentCtl::indent);
         for(auto ps : *previousState){
             for(auto cs : *currentState){
-                LOG1("insert link " << ps << " to " << cs);
+                LOG2(ps << " -> " << cs);
                 auto *transition = new Util::JsonObject();
                 transition->emplace("source", ps);
                 transition->emplace("target", cs);
@@ -53,6 +55,7 @@ void DeparserConverter::insertTransition(cstring cond){
                 links->append(transition);
             }
         }
+        LOG2_UNINDENT;
     }   
 }
 
@@ -93,9 +96,8 @@ bool DeparserConverter::preorder(const IR::MethodCallStatement* s){
         previousState = currentState;
         currentState = new ordered_set<cstring>;
         currentState->insert(stateName);
-
-        insertTransition();
         LOG1("emitting " << hdrName << " width " << hdrW << "bits");
+        insertTransition();
     }
     return true;
 }
