@@ -34,9 +34,6 @@ limitations under the License.
 namespace FPGA {
 
 void DeparserConverter::insertTransition(){
-    insertTransition("");
-}
-void DeparserConverter::insertTransition(cstring cond){
     cstring label = "";
     if(condList->size() > 0){
         for(auto c : *condList){
@@ -57,6 +54,14 @@ void DeparserConverter::insertTransition(cstring cond){
         }
         LOG2_UNINDENT;
     }   
+}
+
+void DeparserConverter::insertState(cstring state){
+    previousState = currentState;
+    currentState = new ordered_set<cstring>();
+    state_set->insert(state);
+    currentState->insert(state);
+    LOG1("insert state " << state);
 }
 
 bool DeparserConverter::preorder(const IR::IfStatement* block){
@@ -92,11 +97,7 @@ bool DeparserConverter::preorder(const IR::MethodCallStatement* s){
         auto hdrName = arg->toString();
         auto hdrW = typeMap->getType(arg)->width_bits();
         cstring stateName = hdrName + "_" + std::to_string(hdrW);
-        state_set->insert(stateName);
-        previousState = currentState;
-        currentState = new ordered_set<cstring>;
-        currentState->insert(stateName);
-        LOG1("emitting " << hdrName << " width " << hdrW << "bits");
+        insertState(stateName);
         insertTransition();
     }
     return true;
@@ -105,12 +106,10 @@ bool DeparserConverter::preorder(const IR::MethodCallStatement* s){
 bool DeparserConverter::preorder(const IR::P4Control* control) {
     links = new Util::JsonArray();
     state_set = new ordered_set<cstring>();
-    previousState = nullptr;
     condList = new std::vector<cstring>();
+    currentState = nullptr;
     auto startState = cstring("<start>");
-    state_set->insert(startState);
-    currentState = new ordered_set<cstring>();
-    currentState->insert(startState);    
+    insertState(startState);
     return true;
 }
 
@@ -119,11 +118,9 @@ void DeparserConverter::postorder(const IR::P4Control* control) {
     dep->emplace("name", control->getName());
     Util::JsonArray*  state = new Util::JsonArray();
 // insert end state
-    previousState = currentState;
-    currentState = new ordered_set<cstring>();
-    currentState->insert("<end>");
-    insertTransition(); 
-    state_set->insert("<end>");
+    auto lastState = cstring("<end>");
+    insertState(lastState);
+    insertTransition();
     for(auto i : *state_set){
         Util::JsonObject* tmp = new Util::JsonObject();
         tmp->emplace("id", i);

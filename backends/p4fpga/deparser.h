@@ -47,8 +47,8 @@ class DeparserConverter : public Inspector {
 
     protected:
         Util::JsonObject* convertDeparser(const IR::P4Control* ctrl);
-        void insertTransition();
-        void insertTransition(cstring cond); // links each previous state with each current states
+        void insertState(cstring state);
+        void insertTransition(); // links each previous state with each current states
     public:
         bool preorder(const IR::P4Control* ctrl);
         bool preorder(const IR::IfStatement* cond);
