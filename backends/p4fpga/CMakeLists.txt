@@ -25,9 +25,11 @@ set (P4FPGA_SRCS
   deparser.cpp
   emitCond.cpp
   midend.cpp
+  staticEval.cpp
   )
 set (P4FPGA_HDRS
   p4fpga.h
+  staticEval.h
   emitCond.h
   depGraphCloser.h
   options.h
