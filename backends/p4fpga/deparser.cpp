@@ -59,9 +59,9 @@ void DeparserConverter::insertTransition(){
 void DeparserConverter::insertState(cstring state){
     previousState = currentState;
     currentState = new ordered_set<cstring>();
+    LOG1("inserting state " << state);
     state_set->insert(state);
     currentState->insert(state);
-    LOG1("insert state " << state);
 }
 
 bool DeparserConverter::preorder(const IR::IfStatement* block){
