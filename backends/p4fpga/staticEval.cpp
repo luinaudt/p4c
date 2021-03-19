@@ -16,60 +16,95 @@ limitations under the License.
 
 
 #include "backends/p4fpga/staticEval.h"
+#include "ir/ir-generated.h"
+#include "ir/ir.h"
+#include "lib/error.h"
+#include "lib/exceptions.h"
+#include "lib/indent.h"
+#include "lib/log.h"
+#include "lib/ordered_map.h"
+#include "midend/interpreter.h"
+#include <stack>
 
 namespace FPGA {
-    bool DoStaticEvaluation::preorder(const IR::ToplevelBlock *tlb){
-        LOG1("visiting program according to execution order");
-        auto main = tlb->getMain();
-        auto param = main->getConstructorParameters();
-        for(auto i: *param){
-            auto arg = main->getParameterValue(i->getName());
-            if(arg->is<IR::ParserBlock>()){
-                auto block = arg->to<IR::ParserBlock>()->container;
-                visit(block);
-            }
-            else if(arg->is<IR::ControlBlock>()){
-                auto block = arg->to<IR::ControlBlock>()->container;
-                visit(block);
-            }
-            else {
-                LOG1("autre " << arg->toString());
-            }
-        }
-        return true;
-    }
 
-    bool DoStaticEvaluation::preorder(const IR::ParameterList *params){
-        for(auto i : *params){
-            LOG1("Param " << i->getName() << " " << typeMap->getType(i)->node_type_name());
-            LOG1("Direction " << i->direction);
-        }
-        return true;
+bool DoStaticEvaluation::preorder(const IR::ToplevelBlock *tlb) {
+  LOG1("visiting program according to execution order");
+  hdr_stack = new std::stack<ordered_map<const IR::StructField*, bool>*>();
+  hdr_stack->emplace(new_hdrMap());
+  auto main = tlb->getMain();
+  auto param = main->getConstructorParameters();
+  for (auto i : *param) {
+    auto arg = main->getParameterValue(i->getName());
+    if (arg->is<IR::ParserBlock>()) {
+      auto block = arg->to<IR::ParserBlock>()->container;
+      visit(block);
+    } else if (arg->is<IR::ControlBlock>()) {
+      auto block = arg->to<IR::ControlBlock>()->container;
+      visit(block);
+    } else {
+      LOG1("other " << arg->toString());
     }
-    bool DoStaticEvaluation::preorder(const IR::P4Parser *block){
-        LOG1("visiting " << block->static_type_name() << " " << block->getName() << IndentCtl::indent);
-        return true;
-    }
-    void DoStaticEvaluation::postorder(const IR::P4Parser *block){
-        LOG1_UNINDENT;
-    }
-
-    bool DoStaticEvaluation::preorder(const IR::P4Control *block){
-        LOG1("visiting " << block->static_type_name() << " " << block->getName() << IndentCtl::indent);
-        return true;
-    }
-    void DoStaticEvaluation::postorder(const IR::P4Control *block){
-        LOG1_UNINDENT;
-    }
-
-    bool DoStaticEvaluation::preorder(const IR::MethodCallStatement *prog){
-        LOG2(prog->static_type_name() << "  "<< prog->toString());
-        return true;
-    }
-    bool DoStaticEvaluation::preorder(const IR::MethodCallExpression *prog){
-        LOG2(prog->static_type_name() << "  "<< prog->toString());
-        return true;
-    }
-    
-    
+  }
+  while (!hdr_stack->empty()) {
+      for(auto i : *hdr_stack->top()){
+          LOG1("hdr " << i.first->name << 
+          " of Type " << typeMap->getType(i.first)->to<IR::Type_Header>()->name <<
+          " is " << ((i.second) ? "true" : "false"));
+      }
+      hdr_stack->pop();
+  }
+  return true;
 }
+
+bool DoStaticEvaluation::preorder(const IR::P4Parser *block){
+    LOG1("visiting " << block->static_type_name() << " " << block->getName() << IndentCtl::indent);
+    auto param = typeMap->getType(block->getApplyParameters()->parameters.at(1));
+    if(!param->is<IR::Type_Struct>()){
+        ::error(ErrorType::ERR_UNEXPECTED,
+                "%1%: param is not a struct", param);
+    }
+    auto paramType = param->to<IR::Type_Struct>();
+    for(auto i : paramType->fields){
+        auto elem = typeMap->getType(i);
+        if(elem->is<IR::Type_Header>()){
+            hdr_stack->top()->emplace(i, false);
+        }
+        else{
+            P4C_UNIMPLEMENTED("only header are supporter for static analysis");
+        }
+    }
+    return true;
+}
+void DoStaticEvaluation::postorder(const IR::P4Parser *block){
+    LOG1_UNINDENT;
+}
+
+bool DoStaticEvaluation::preorder(const IR::P4Control *block){
+    LOG1("visiting " << block->static_type_name() << " " << block->getName() << IndentCtl::indent);
+    return true;
+}
+void DoStaticEvaluation::postorder(const IR::P4Control *block){
+    LOG1_UNINDENT;
+}
+
+bool DoStaticEvaluation::preorder(const IR::MethodCallStatement *stat){
+    LOG2(stat->static_type_name() << "  "<< stat->toString());
+    auto mi = P4::MethodInstance::resolve(stat->methodCall, refMap, typeMap);
+    auto em = mi->to<P4::ExternMethod>();
+    if(em != nullptr){
+        if (em->originalExternType->name.name == P4::P4CoreLibrary::instance.packetIn.name &&
+            em->method->name.name == P4::P4CoreLibrary::instance.packetIn.extract.name) {
+            auto mc = stat->methodCall;
+            auto arg = mc->arguments->at(0);
+            LOG1(arg);
+        }
+    }
+    return true;
+}
+bool DoStaticEvaluation::preorder(const IR::MethodCallExpression *prog){
+    LOG3(prog->static_type_name() << "  "<< prog->toString());
+    return true;
+}
+
+} // namespace FPGA
