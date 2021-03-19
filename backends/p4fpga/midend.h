@@ -24,7 +24,7 @@ limitations under the License.
 #include "frontends/p4/typeMap.h"
 #include "midend/convertEnums.h"
 #include "backends/p4fpga/emitCond.h"
-
+#include "backends/p4fpga/staticEval.h"
 
 namespace FPGA {
 /**
