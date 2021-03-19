@@ -1,0 +1,64 @@
+/*
+Copyright 2021-present Thomas Luinaud
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+#ifndef BACKENDS_FPGA_STATICEVAL_H_
+#define BACKENDS_FPGA_STATICEVAL_H_
+
+#include "common/resolveReferences/referenceMap.h"
+#include "ir/ir.h"
+#include "ir/pass_manager.h"
+#include "p4/evaluator/evaluator.h"
+#include "p4/typeChecking/typeChecker.h"
+#include "p4/typeMap.h"
+
+
+namespace FPGA{
+class DoStaticEvaluation : public Inspector{
+    P4::TypeMap* typeMap;
+    public:
+    /**
+    Inspector class for static evaluation of P4 program
+    This class goes through header according to execution order
+    */
+    explicit DoStaticEvaluation(P4::TypeMap *typeMap) : typeMap(typeMap)
+            {setName("DoStaticEvaluation"); }
+    bool preorder(const IR::ToplevelBlock *tlb);
+    bool preorder(const IR::ParameterList *params);
+    bool preorder(const IR::P4Parser *block);
+    void postorder(const IR::P4Parser *block);
+    bool preorder(const IR::P4Control *block);
+    void postorder(const IR::P4Control *block);
+    bool preorder(const IR::MethodCallStatement *prog);
+    bool preorder(const IR::MethodCallExpression *prog);
+};
+
+class StaticEvaluation : public PassManager{
+    public:
+    explicit StaticEvaluation(P4::ReferenceMap *refMap, P4::TypeMap *typeMap)
+            {
+                auto evaluator = new P4::EvaluatorPass(refMap, typeMap);
+                auto evaluation = new DoStaticEvaluation(typeMap);
+                passes.push_back(new P4::TypeChecking(refMap, typeMap));
+                passes.push_back(evaluator); // we visit from toplevel
+                passes.push_back(new VisitFunctor([evaluator, evaluation](){
+                    auto toplevel = evaluator->getToplevelBlock();
+                    toplevel->apply(*evaluation);
+                }));
+                //passes.push_back(new DoStaticEvaluation(typeMap));
+                setName("StaticEvaluation"); 
+            }
+};
+}
+#endif /* BACKENDS_FPGA_STATICEVAL_H_ */
