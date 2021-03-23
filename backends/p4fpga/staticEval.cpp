@@ -24,13 +24,15 @@ limitations under the License.
 #include "lib/log.h"
 #include "lib/ordered_map.h"
 #include "midend/interpreter.h"
+#include "p4/methodInstance.h"
+#include <iostream>
 #include <stack>
 
 namespace FPGA {
 
 bool DoStaticEvaluation::preorder(const IR::ToplevelBlock *tlb) {
   LOG1("visiting program according to execution order");
-  hdr_vec = new std::vector<hdr_value*>();
+  hdr_vec = new std::vector<P4::ValueMap*>();
   auto main = tlb->getMain();
   auto param = main->getConstructorParameters();
   for (auto i : *param) {
@@ -47,10 +49,9 @@ bool DoStaticEvaluation::preorder(const IR::ToplevelBlock *tlb) {
   }
   //while (!hdr_stack->empty()) {
     for(auto j : *hdr_vec){
-      for(auto i : *j){
-          LOG1("hdr " << i.first->name << 
-          " of Type " << typeMap->getType(i.first)->to<IR::Type_Header>()->name <<
-          " is " << ((i.second) ? "true" : "false"));
+      for(auto i : j->map){
+          LOG1(i.first << 
+                " of " << i.second);
       }
       //hdr_stack->pop();
   }
@@ -59,61 +60,64 @@ bool DoStaticEvaluation::preorder(const IR::ToplevelBlock *tlb) {
 
 bool DoStaticEvaluation::preorder(const IR::P4Parser *block){
     LOG1("visiting " << block->static_type_name() << " " << block->getName() << IndentCtl::indent);
-    auto param = typeMap->getType(block->getApplyParameters()->parameters.at(1));
-    if(!param->is<IR::Type_Struct>()){
+    auto hdrIn = block->getApplyParameters()->parameters.at(1);
+    auto paramType = typeMap->getType(hdrIn);
+    if(!paramType->is<IR::Type_Struct>()){
         ::error(ErrorType::ERR_UNEXPECTED,
-                "%1%: param is not a struct", param);
+                "%1%: param is not a struct", paramType);
     }
-    hdr = new hdr_value();
-    auto paramType = param->to<IR::Type_Struct>();
-    for(auto i : paramType->fields){
-        auto elem = typeMap->getType(i);
-        if(elem->is<IR::Type_Header>()){
-            hdr->emplace(i, false);
-        }
-        else{
-            P4C_UNIMPLEMENTED("only header are supporter for static analysis");
-        }
-    }
+    hdr = new P4::ValueMap();
+    evaluator = new P4::ExpressionEvaluator(refMap, typeMap, hdr);
+    auto val = factory->create(paramType, true);
+    hdr->set(hdrIn, val);
+    LOG1(val);
     visit(block->states);
+    hdr_vec->push_back(hdr);
     return true;
 }
 bool DoStaticEvaluation::preorder(const IR::ParserState *s){
-    LOG1("visiting parser state" << IndentCtl::indent);
+    LOG1("visiting parser state " << s->name << IndentCtl::indent);
     return true;
 }
-void DoStaticEvaluation::postorder(const IR::ParserState *s){
-    LOG1_UNINDENT;
-}
-
-void DoStaticEvaluation::postorder(const IR::P4Parser *block){
-    LOG1_UNINDENT;
-}
-
 bool DoStaticEvaluation::preorder(const IR::P4Control *block){
     LOG1("visiting " << block->static_type_name() << " " << block->getName() << IndentCtl::indent);
+    auto hdrIn = block->getApplyParameters()->parameters.at(0);
+    auto paramType = typeMap->getType(hdrIn);
+    if(paramType->is<IR::Type_Struct>()){
+        //FIXME - Special case for deparser 
+        hdrIn = block->getApplyParameters()->parameters.at(1);
+        paramType = typeMap->getType(hdrIn);
+    }
+    if(!paramType->is<IR::Type_Struct>()){
+        ::error(ErrorType::ERR_UNEXPECTED,
+                "%1%: param is not a struct", paramType);
+    }
+    auto newMap = new P4::ValueMap();
+    newMap->set(hdrIn, hdr->map.begin()->second);
+    LOG1(newMap);
+    hdr = newMap;
+    evaluator = new P4::ExpressionEvaluator(refMap, typeMap, hdr);
     return true;
-}
-void DoStaticEvaluation::postorder(const IR::P4Control *block){
-    LOG1_UNINDENT;
 }
 
 bool DoStaticEvaluation::preorder(const IR::MethodCallStatement *stat){
     LOG2(stat->static_type_name() << "  "<< stat->toString());
     auto mi = P4::MethodInstance::resolve(stat->methodCall, refMap, typeMap);
-    auto em = mi->to<P4::ExternMethod>();
-    if(em != nullptr){
-        if (em->originalExternType->name.name == P4::P4CoreLibrary::instance.packetIn.name &&
-            em->method->name.name == P4::P4CoreLibrary::instance.packetIn.extract.name) {
-            auto mc = stat->methodCall;
-            auto arg = mc->arguments->at(0);
-            LOG1(stat);
+    if(mi->is<P4::BuiltInMethod>()){
+        auto bim = mi->to<P4::BuiltInMethod>();
+        if(bim->name.name == IR::Type_Header::isValid){
+            LOG2(stat->toString() << " isValid Method");
+            return false;
         }
+    }
+    if(mi->is<P4::ExternMethod>()){
+        return false;
     }
     return true;
 }
-bool DoStaticEvaluation::preorder(const IR::MethodCallExpression *prog){
-    LOG3(prog->static_type_name() << "  "<< prog->toString());
+bool DoStaticEvaluation::preorder(const IR::MethodCallExpression *expr){
+    LOG2(expr->static_type_name() << "  "<< expr->toString());
+    evaluator->evaluate(expr, false);
     return true;
 }
 

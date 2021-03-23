@@ -34,37 +34,30 @@ namespace FPGA{
 class DoStaticEvaluation : public Inspector{
     P4::TypeMap* typeMap;
     P4::ReferenceMap *refMap;
-    typedef ordered_map<const IR::StructField*, bool> hdr_value;
-    hdr_value* hdr;
-    std::vector<hdr_value*> *hdr_vec;
+    P4::ValueMap* hdr;
+    std::vector<P4::ValueMap*> *hdr_vec;
+    const P4::SymbolicValueFactory* factory;
+    P4::ExpressionEvaluator* evaluator;
     public:
     /**
     Inspector class for static evaluation of P4 program
     This class goes through header according to execution order
     */
     explicit DoStaticEvaluation(P4::ReferenceMap *refMap, P4::TypeMap *typeMap) :
-            typeMap(typeMap), refMap(refMap) {setName("DoStaticEvaluation"); }
+            typeMap(typeMap), refMap(refMap) {
+                    visitDagOnce = false;
+                    factory = new P4::SymbolicValueFactory(typeMap);
+                    setName("DoStaticEvaluation");}
     bool preorder(const IR::ToplevelBlock *tlb);
     bool preorder(const IR::P4Parser *block);
-    void postorder(const IR::P4Parser *block);
     bool preorder(const IR::P4Control *block);
-    void postorder(const IR::P4Control *block);
     bool preorder(const IR::MethodCallStatement *stat);
     bool preorder(const IR::MethodCallExpression *expr);
     bool preorder(const IR::ParserState *state);
-    void postorder(const IR::ParserState *s);
+    void postorder(const IR::P4Parser *block){LOG1_UNINDENT;};
+    void postorder(const IR::P4Control *block){LOG1_UNINDENT;};
+    void postorder(const IR::ParserState *s){LOG1_UNINDENT;};
 
-    private:
-    hdr_value* new_hdrMap(){
-        return new hdr_value;
-    }
-    hdr_value* copy_hdrMap(hdr_value* prev){
-        auto newMap = new_hdrMap();
-        for(auto i: *prev){
-            newMap->emplace(i.first, i.second);
-        }
-        return newMap;
-    }
 };
 
 class StaticEvaluation : public PassManager{
