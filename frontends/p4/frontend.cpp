@@ -54,8 +54,10 @@ limitations under the License.
 #include "simplify.h"
 #include "simplifyDefUse.h"
 #include "simplifyParsers.h"
+#include "simplifySwitch.h"
 #include "specialize.h"
 #include "specializeGenericFunctions.h"
+#include "specializeGenericTypes.h"
 #include "strengthReduction.h"
 #include "structInitializers.h"
 #include "switchAddDefault.h"
@@ -128,7 +130,7 @@ const IR::P4Program *FrontEnd::run(const CompilerOptions &options, const IR::P4P
     refMap.setIsV1(isv1);
 
     auto evaluator = new P4::EvaluatorPass(&refMap, &typeMap);
-    std::initializer_list<Visitor *> frontendPasses = {
+    PassManager passes({
         new P4V1::getV1ModelVersion,
         // Parse annotations
         new ParseAnnotationBodies(&parseAnnotations, &typeMap),
@@ -152,14 +154,15 @@ const IR::P4Program *FrontEnd::run(const CompilerOptions &options, const IR::P4P
         new TypeInference(&refMap, &typeMap, false),  // insert casts
         new ValidateMatchAnnotations(&typeMap),
         new BindTypeVariables(&refMap, &typeMap),
+        new SpecializeGenericTypes(&refMap, &typeMap),
         new DefaultArguments(&refMap, &typeMap),  // add default argument values to parameters
         new ResolveReferences(&refMap),
         new TypeInference(&refMap, &typeMap, false),  // more casts may be needed
-        new RemoveParserControlFlow(&refMap, &typeMap),
+        new RemoveParserIfs(&refMap, &typeMap),
         new StructInitializers(&refMap, &typeMap),
         new SpecializeGenericFunctions(&refMap, &typeMap),
         new TableKeyNames(&refMap, &typeMap),
-        new PassRepeated({
+        PassRepeated({
             new ConstantFolding(&refMap, &typeMap),
             new StrengthReduction(&refMap, &typeMap),
             new Reassociation(),
@@ -176,6 +179,7 @@ const IR::P4Program *FrontEnd::run(const CompilerOptions &options, const IR::P4P
         new MoveInitializers(&refMap),
         new SideEffectOrdering(&refMap, &typeMap, skipSideEffectOrdering),
         new SimplifyControlFlow(&refMap, &typeMap),
+        new SimplifySwitch(&refMap, &typeMap),
         new MoveDeclarations(),  // Move all local declarations to the beginning
         new SimplifyDefUse(&refMap, &typeMap),
         new UniqueParameters(&refMap, &typeMap),
@@ -195,7 +199,7 @@ const IR::P4Program *FrontEnd::run(const CompilerOptions &options, const IR::P4P
         // Check for constants only after inlining
         new CheckConstants(&refMap, &typeMap),
         new SimplifyControlFlow(&refMap, &typeMap),
-        new RemoveParserControlFlow(&refMap, &typeMap),
+        new RemoveParserControlFlow(&refMap, &typeMap),  // more ifs may have been added to parsers
         new UniqueNames(&refMap),
         new LocalizeAllActions(&refMap),
         new UniqueNames(&refMap),  // needed again after inlining
@@ -203,17 +207,12 @@ const IR::P4Program *FrontEnd::run(const CompilerOptions &options, const IR::P4P
         new SimplifyControlFlow(&refMap, &typeMap),
         new HierarchicalNames(),
         new FrontEndLast(),
-    };
+    });
     if (options.listFrontendPasses) {
-        for (auto it : frontendPasses) {
-            if (it != nullptr) {
-                *outStream << it->name() <<'\n';
-            }
-        }
+        passes.listPasses(*outStream, "\n");
+        *outStream << std::endl;
         return nullptr;
     }
-
-    PassManager passes(frontendPasses);
 
     if (options.excludeFrontendPasses) {
        passes.removePasses(options.passesToExcludeFrontend);

@@ -51,8 +51,10 @@ set (P4_FRONTEND_SRCS
   p4/simplify.cpp
   p4/simplifyDefUse.cpp
   p4/simplifyParsers.cpp
+  p4/simplifySwitch.cpp
   p4/specialize.cpp
   p4/specializeGenericFunctions.cpp
+  p4/specializeGenericTypes.cpp
   p4/strengthReduction.cpp
   p4/structInitializers.cpp
   p4/switchAddDefault.cpp
@@ -117,8 +119,10 @@ set (P4_FRONTEND_HDRS
   p4/simplify.h
   p4/simplifyDefUse.h
   p4/simplifyParsers.h
+  p4/simplifySwitch.h
   p4/specialize.h
   p4/specializeGenericFunctions.h
+  p4/specializeGenericTypes.h
   p4/strengthReduction.h
   p4/structInitializers.h
   p4/switchAddDefault.h
@@ -147,6 +151,7 @@ set (COMMON_FRONTEND_SRCS
   common/constantFolding.cpp
   common/constantParsing.cpp
   common/options.cpp
+  common/parser_options.cpp
   common/parseInput.cpp
   common/resolveReferences/referenceMap.cpp
   common/resolveReferences/resolveReferences.cpp
@@ -159,6 +164,7 @@ set (COMMON_FRONTEND_HDRS
   common/model.h
   common/name_gateways.h
   common/options.h
+  common/parser_options.h
   common/parseInput.h
   common/programMap.h
   common/resolveReferences/referenceMap.h

@@ -493,6 +493,7 @@ bool ToP4::process(const IR::Type_StructLike* t, const char* name) {
         visit(t->annotations);
         builder.appendFormat("%s ", name); }
     builder.append(t->name);
+    visit(t->typeParameters);
     if (!isDeclaration)
         return false;
     builder.spc();
@@ -557,66 +558,19 @@ bool ToP4::preorder(const IR::Type_Control* t) {
 
 ///////////////////////
 
-char DigitToChar(int digit) {
-    switch (digit) {
-        case 0: return '0';
-        case 1: return '1';
-        case 2: return '2';
-        case 3: return '3';
-        case 4: return '4';
-        case 5: return '5';
-        case 6: return '6';
-        case 7: return '7';
-        case 8: return '8';
-        case 9: return '9';
-        case 10: return 'a';
-        case 11: return 'b';
-        case 12: return 'c';
-        case 13: return 'd';
-        case 14: return 'e';
-        case 15: return 'f';
-        default: break;
-    }
-    BUG("Unexpected digit: %1%", digit);
-}
-
 bool ToP4::preorder(const IR::Constant* c) {
-    big_int value = c->value;
-    big_int zero = 0;
-    if (value < zero) {
-        builder.append("-");
-        value = -value;
-    }
-
     const IR::Type_Bits* tb = dynamic_cast<const IR::Type_Bits*>(c->type);
-    if (tb != nullptr) {
-        builder.appendFormat("%d", tb->size);
-        builder.append(tb->isSigned ? "s" : "w");
+    unsigned width;
+    bool sign;
+    if (tb == nullptr) {
+        width = 0;
+        sign = false;
+    } else {
+        width = tb->size;
+        sign = tb->isSigned;
     }
-    switch (c->base) {
-        case 2:
-            builder.append("0b");
-            break;
-        case 8:
-            builder.append("0o");
-            break;
-        case 16:
-            builder.append("0x");
-            break;
-        case 10:
-            break;
-        default:
-            BUG("%1%: Unexpected base %2%", c, c->base);
-    }
-    std::deque<char> buf;
-    do {
-        const int digit =
-            static_cast<int>(static_cast<big_int>(value % c->base));
-        value /= c->base;
-        buf.push_front(DigitToChar(digit));
-    } while (value > 0);
-    for (auto ch : buf)
-        builder.appendFormat("%c", ch);
+    cstring s = Util::toString(c->value, width, sign, c->base);
+    builder.append(s);
     return false;
 }
 
@@ -902,9 +856,9 @@ bool ToP4::preorder(const IR::NamedExpression* e) {
 bool ToP4::preorder(const IR::StructExpression* e) {
     if (expressionPrecedence > DBPrint::Prec_Prefix)
         builder.append("(");
-    if (e->typeName != nullptr) {
+    if (e->structType != nullptr) {
         builder.append("(");
-        visit(e->typeName);
+        visit(e->structType);
         builder.append(")");
     }
     builder.append("{");
@@ -1151,7 +1105,7 @@ bool ToP4::preorder(const IR::SwitchStatement* s) {
     setVecSep("\n", "\n");
     preorder(&s->cases);
     doneVec();
-    builder.blockEnd(true);
+    builder.blockEnd(false);
     return false;
 }
 
@@ -1426,7 +1380,6 @@ bool ToP4::preorder(const IR::EntriesList *l) {
     builder.decreaseIndent();
     builder.emitIndent();
     builder.append("}");
-    builder.newline();
     return false;
 }
 

@@ -34,6 +34,7 @@ limitations under the License.
 #include "midend/eliminateTuples.h"
 #include "midend/eliminateNewtype.h"
 #include "midend/eliminateSerEnums.h"
+#include "midend/eliminateSwitch.h"
 #include "midend/flattenHeaders.h"
 #include "midend/flattenInterfaceStructs.h"
 #include "midend/replaceSelectRange.h"
@@ -42,6 +43,7 @@ limitations under the License.
 #include "midend/local_copyprop.h"
 #include "midend/midEndLast.h"
 #include "midend/nestedStructs.h"
+#include "midend/parserUnroll.h"
 #include "midend/noMatch.h"
 #include "midend/predication.h"
 #include "midend/removeExits.h"
@@ -76,7 +78,7 @@ MidEnd::MidEnd(CompilerOptions& options, std::ostream* outStream) {
 
     auto v1controls = new std::set<cstring>();
 
-    std::initializer_list<Visitor *> midendPasses = {
+    addPasses({
         options.ndebug ? new P4::RemoveAssertAssume(&refMap, &typeMap) : nullptr,
         new P4::RemoveMiss(&refMap, &typeMap),
         new P4::EliminateNewtype(&refMap, &typeMap),
@@ -113,8 +115,9 @@ MidEnd::MidEnd(CompilerOptions& options, std::ostream* outStream) {
         new P4::SimplifyControlFlow(&refMap, &typeMap),
         new P4::CompileTimeOperations(),
         new P4::TableHit(&refMap, &typeMap),
+        new P4::EliminateSwitch(&refMap, &typeMap),
         evaluator,
-        new VisitFunctor([v1controls, evaluator](const IR::Node *root) -> const IR::Node * {
+        [v1controls, evaluator](const IR::Node *root) -> const IR::Node * {
             auto toplevel = evaluator->getToplevelBlock();
             auto main = toplevel->getMain();
             if (main == nullptr)
@@ -137,20 +140,17 @@ MidEnd::MidEnd(CompilerOptions& options, std::ostream* outStream) {
                 v1controls->emplace(update->to<IR::ControlBlock>()->container->name);
                 v1controls->emplace(deparser->to<IR::ControlBlock>()->container->name);
             }
-            return root; }),
+            return root; },
         new P4::SynthesizeActions(&refMap, &typeMap, new SkipControls(v1controls)),
         new P4::MoveActionsToTables(&refMap, &typeMap),
         evaluator,
-        new VisitFunctor([this, evaluator]() { toplevel = evaluator->getToplevelBlock(); }),
+        [this, evaluator]() { toplevel = evaluator->getToplevelBlock(); },
+        options.loopsUnrolling ? new P4::ParsersUnroll(true, &refMap, &typeMap) : nullptr,
         new P4::MidEndLast()
-    };
-    addPasses(midendPasses);
+    });
     if (options.listMidendPasses) {
-        for (auto it : midendPasses) {
-            if (it != nullptr) {
-                *outStream << it->name() <<'\n';
-            }
-        }
+        listPasses(*outStream, "\n");
+        *outStream << std::endl;
         return;
     }
     if (options.excludeMidendPasses) {

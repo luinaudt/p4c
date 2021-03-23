@@ -29,6 +29,7 @@ limitations under the License.
 #include "frontends/p4/unusedDeclarations.h"
 #include "midend/actionSynthesis.h"
 #include "midend/complexComparison.h"
+#include "midend/copyStructures.h"
 #include "midend/convertEnums.h"
 #include "midend/eliminateNewtype.h"
 #include "midend/eliminateTuples.h"
@@ -72,9 +73,9 @@ MidEnd::run(EbpfOptions& options, const IR::P4Program* program, std::ostream* ou
     refMap.setIsV1(isv1);
     auto evaluator = new P4::EvaluatorPass(&refMap, &typeMap);
 
-    PassManager midEnd = {};
+    PassManager midEnd;
     if (options.loadIRFromJson == false) {
-        std::initializer_list<Visitor *> midendPasses = {
+        midEnd.addPasses({
                 new P4::ConvertEnums(&refMap, &typeMap, new EnumOn32Bits()),
                 new P4::RemoveMiss(&refMap, &typeMap),
                 new P4::ClearTypeMap(&typeMap),
@@ -92,6 +93,7 @@ MidEnd::run(EbpfOptions& options, const IR::P4Program* program, std::ostream* ou
                 new P4::SimplifyParsers(&refMap),
                 new P4::StrengthReduction(&refMap, &typeMap),
                 new P4::SimplifyComparisons(&refMap, &typeMap),
+                new P4::CopyStructures(&refMap, &typeMap),
                 new P4::LocalCopyPropagation(&refMap, &typeMap),
                 new P4::SimplifySelectList(&refMap, &typeMap),
                 new P4::MoveDeclarations(),  // more may have been introduced
@@ -104,25 +106,21 @@ MidEnd::run(EbpfOptions& options, const IR::P4Program* program, std::ostream* ou
                 new EBPF::Lower(&refMap, &typeMap),
                 evaluator,
                 new P4::MidEndLast()
-        };
+        });
         if (options.listMidendPasses) {
-            for (auto it : midendPasses) {
-                if (it != nullptr) {
-                    *outStream << it->name() <<'\n';
-                }
-            }
+            midEnd.listPasses(*outStream, "\n");
+            *outStream << std::endl;
             return nullptr;
         }
-        midEnd = midendPasses;
         if (options.excludeMidendPasses) {
             midEnd.removePasses(options.passesToExcludeMidend);
         }
     } else {
-        midEnd = {
+        midEnd.addPasses({
                 new P4::ResolveReferences(&refMap),
                 new P4::TypeChecking(&refMap, &typeMap),
                 evaluator
-        };
+        });
     }
     midEnd.setName("MidEnd");
     midEnd.addDebugHooks(hooks);
@@ -133,4 +131,3 @@ MidEnd::run(EbpfOptions& options, const IR::P4Program* program, std::ostream* ou
     return evaluator->getToplevelBlock();
 }
 }  // namespace UBPF
-

@@ -9,9 +9,6 @@ header Header {
 extern void func(in Header h);
 extern bit<32> g(inout bit<32> v, in bit<32> w);
 parser p1(packet_in p, out Header h) {
-    @name("p1.stack") Header[2] stack_0;
-    @name("p1.c") bool c_0;
-    @name("p1.d") bool d_0;
     @name("p1.tmp") bit<32> tmp;
     @name("p1.tmp_0") bit<32> tmp_0;
     @name("p1.tmp_1") bit<32> tmp_1;
@@ -26,19 +23,15 @@ parser p1(packet_in p, out Header h) {
         tmp_2 = tmp_1;
         g(h.data2, tmp_2);
         h.data2 = h.data3 + 32w1;
-        stack_0[1].isValid();
         transition select(h.isValid()) {
             true: next1;
             false: next2;
         }
     }
     state next1 {
-        d_0 = false;
         transition next3;
     }
     state next2 {
-        c_0 = true;
-        d_0 = c_0;
         transition next3;
     }
     state next3 {
@@ -47,18 +40,12 @@ parser p1(packet_in p, out Header h) {
 }
 
 control c(out bit<32> v) {
-    @name("c.d") bit<32> d_1;
-    @name("c.setByAction") bit<32> setByAction_0;
     @name("c.e") bit<32> e_0;
-    @name("c.touched") bool touched_0;
     @name("c.a1") action a1() {
-        setByAction_0 = 32w1;
     }
     @name("c.a1") action a1_2() {
-        setByAction_0 = 32w1;
     }
     @name("c.a2") action a2() {
-        setByAction_0 = 32w1;
     }
     @name("c.t") table t_0 {
         actions = {
@@ -68,7 +55,6 @@ control c(out bit<32> v) {
         default_action = a1();
     }
     apply {
-        d_1 = 32w1;
         if (e_0 > 32w0) {
             e_0 = 32w1;
         } else {
@@ -77,12 +63,10 @@ control c(out bit<32> v) {
         e_0 = e_0 + 32w1;
         switch (t_0.apply().action_run) {
             a1: {
-                touched_0 = true;
             }
             default: {
             }
         }
-
         if (e_0 > 32w0) {
             t_0.apply();
         } else {
