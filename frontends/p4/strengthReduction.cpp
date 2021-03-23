@@ -334,6 +334,25 @@ const IR::Node* DoStrengthReduction::postorder(IR::Mod* expr) {
     return expr;
 }
 
+const IR::Node* DoStrengthReduction::postorder(IR::Range* range) {
+    // Range a..a is the same as a
+    if (auto c0 = range->left->to<IR::Constant>()) {
+        if (auto c1 = range->right->to<IR::Constant>()) {
+            if (c0->value == c1->value)
+                return c0;
+        }
+    }
+    return range;
+}
+
+const IR::Node* DoStrengthReduction::postorder(IR::Mask* mask) {
+    // a &&& 0xFFFF = a
+    if (isAllOnes(mask->right)) {
+        return mask->left;
+    }
+    return mask;
+}
+
 const IR::Node* DoStrengthReduction::postorder(IR::Mux* expr) {
     if (isTrue(expr->e1) && isFalse(expr->e2))
         return expr->e0;
@@ -368,7 +387,7 @@ const IR::Node* DoStrengthReduction::postorder(IR::Slice* expr) {
             expr->e0 = shift_of;
             expr->e1 = new IR::Constant(hi + shift_amt);
             expr->e2 = new IR::Constant(lo + shift_amt); }
-        if (hi + shift_amt <= 0) {
+        if (hi + shift_amt < 0) {
             if (!hasSideEffects(shift_of))
                 return new IR::Constant(IR::Type_Bits::get(hi - lo + 1), 0);
             // TODO: here we could promote the side-effect into a

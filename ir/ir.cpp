@@ -36,15 +36,15 @@ int IR::Declaration::nextId = 0;
 int IR::This::nextId = 0;
 
 const Type_Method* P4Control::getConstructorMethodType() const {
-    return new Type_Method(getTypeParameters(), type, constructorParams);
+    return new Type_Method(getTypeParameters(), type, constructorParams, getName());
 }
 
 const Type_Method* P4Parser::getConstructorMethodType() const {
-    return new Type_Method(getTypeParameters(), type, constructorParams);
+    return new Type_Method(getTypeParameters(), type, constructorParams, getName());
 }
 
 const Type_Method* Type_Package::getConstructorMethodType() const {
-    return new Type_Method(getTypeParameters(), this, constructorParams);
+    return new Type_Method(getTypeParameters(), this, constructorParams, getName());
 }
 
 Util::Enumerator<const IR::IDeclaration*>* IGeneralNamespace::getDeclsByName(cstring name) const {
@@ -123,7 +123,7 @@ void P4Parser::checkDuplicates() const {
 
 bool Type_Stack::sizeKnown() const { return size->is<Constant>(); }
 
-unsigned Type_Stack::getSize() const {
+size_t Type_Stack::getSize() const {
     if (!sizeKnown())
         BUG("%1%: Size not yet known", size);
     auto cst = size->to<IR::Constant>();
@@ -134,7 +134,7 @@ unsigned Type_Stack::getSize() const {
     int size = cst->asInt();
     if (size <= 0)
         ::error(ErrorType::ERR_OVERLIMIT, "Illegal array size: %1%", cst);
-    return static_cast<unsigned>(size);
+    return static_cast<size_t>(size);
 }
 
 const Method* Type_Extern::lookupMethod(IR::ID name, const Vector<Argument>* arguments) const {
@@ -161,12 +161,12 @@ const Method* Type_Extern::lookupMethod(IR::ID name, const Vector<Argument>* arg
 
 const Type_Method*
 Type_Parser::getApplyMethodType() const {
-    return new Type_Method(applyParams);
+    return new Type_Method(applyParams, getName());
 }
 
 const Type_Method*
 Type_Control::getApplyMethodType() const {
-    return new Type_Method(applyParams);
+    return new Type_Method(applyParams, getName());
 }
 
 const IR::Path* ActionListElement::getPath() const {
@@ -194,7 +194,7 @@ P4Table::getApplyMethodType() const {
     auto miss = new IR::StructField(IR::Type_Table::miss, IR::Type_Boolean::get());
     auto label = new IR::StructField(IR::Type_Table::action_run, new IR::Type_ActionEnum(alv));
     auto rettype = new IR::Type_Struct(ID(name), { hit, miss, label });
-    auto applyMethod = new IR::Type_Method(rettype, new IR::ParameterList());
+    auto applyMethod = new IR::Type_Method(rettype, new IR::ParameterList(), getName());
     return applyMethod;
 }
 
