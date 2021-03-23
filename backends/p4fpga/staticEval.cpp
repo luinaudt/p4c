@@ -75,8 +75,17 @@ bool DoStaticEvaluation::preorder(const IR::P4Parser *block){
             P4C_UNIMPLEMENTED("only header are supporter for static analysis");
         }
     }
+    visit(block->states);
     return true;
 }
+bool DoStaticEvaluation::preorder(const IR::ParserState *s){
+    LOG1("visiting parser state" << IndentCtl::indent);
+    return true;
+}
+void DoStaticEvaluation::postorder(const IR::ParserState *s){
+    LOG1_UNINDENT;
+}
+
 void DoStaticEvaluation::postorder(const IR::P4Parser *block){
     LOG1_UNINDENT;
 }
@@ -98,7 +107,7 @@ bool DoStaticEvaluation::preorder(const IR::MethodCallStatement *stat){
             em->method->name.name == P4::P4CoreLibrary::instance.packetIn.extract.name) {
             auto mc = stat->methodCall;
             auto arg = mc->arguments->at(0);
-            LOG1(arg->to<IR::StructField>() );
+            LOG1(stat);
         }
     }
     return true;

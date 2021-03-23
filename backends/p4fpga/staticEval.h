@@ -51,7 +51,8 @@ class DoStaticEvaluation : public Inspector{
     void postorder(const IR::P4Control *block);
     bool preorder(const IR::MethodCallStatement *stat);
     bool preorder(const IR::MethodCallExpression *expr);
-
+    bool preorder(const IR::ParserState *state);
+    void postorder(const IR::ParserState *s);
 
     private:
     hdr_value* new_hdrMap(){
