@@ -83,7 +83,7 @@ bool DoStaticEvaluation::preorder(const IR::P4Control *block){
     LOG1("visiting " << block->static_type_name() << " " << block->getName() << IndentCtl::indent);
     auto hdrIn = block->getApplyParameters()->parameters.at(0);
     auto paramType = typeMap->getType(hdrIn);
-    if(paramType->is<IR::Type_Struct>()){
+    if(!paramType->is<IR::Type_Struct>()){
         //FIXME - Special case for deparser 
         hdrIn = block->getApplyParameters()->parameters.at(1);
         paramType = typeMap->getType(hdrIn);
