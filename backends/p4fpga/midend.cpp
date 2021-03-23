@@ -45,6 +45,7 @@ namespace FPGA {
             new P4::ResolveReferences(&refMap),
             new P4::TypeChecking(&refMap, &typeMap),
             new P4::SimplifyParsers(&refMap),
+            new P4::ParsersUnroll(true, &refMap, &typeMap),
             new P4::ExpandEmit(&refMap, &typeMap),
             new P4::TypeChecking(&refMap, &typeMap),
             new EmitCond(&refMap, &typeMap),
