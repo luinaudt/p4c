@@ -39,7 +39,7 @@ namespace FPGA {
         // temporary
         auto convertEnums = new P4::ConvertEnums(&refMap, &typeMap, new EnumOn32Bits("v1model.p4"));        // evaluator compiler-design.pptx slide 77
         auto evaluator = new P4::EvaluatorPass(&refMap, &typeMap);
-        std::initializer_list<Visitor *> midendPasses = {
+        addPasses({
             new P4::EliminateNewtype(&refMap, &typeMap),
             convertEnums, new VisitFunctor([this, convertEnums]() { enumMap = convertEnums->getEnumMapping(); }),
             new P4::ResolveReferences(&refMap),
@@ -62,8 +62,7 @@ namespace FPGA {
             evaluator,
             new VisitFunctor([this, evaluator]() { // set toplevel
                                 toplevel = evaluator->getToplevelBlock(); }) 
-        };
-        addPasses(midendPasses);
+        });
         if (options.excludeMidendPasses) {
             removePasses(options.passesToExcludeMidend);
         }
