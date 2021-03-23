@@ -16,6 +16,7 @@ limitations under the License.
 #include "backends/p4fpga/emitCond.h"
 #include "frontends/p4/coreLibrary.h"
 #include "frontends/p4/methodInstance.h"
+#include "ir/ir-generated.h"
 #include "ir/ir.h"
 #include "lib/log.h"
 
@@ -38,12 +39,32 @@ namespace FPGA{
                                         st, IR::Type_Header::isValid);
                 auto cond = new IR::MethodCallExpression(mc, new IR::Vector<IR::Argument>());
                 auto newCond = new IR::IfStatement(cond, s, nullptr);
-                LOG1("Convert " << s );
+                LOG1("Converting " << s );
                 LOG2("to\n" << newCond);
                 return newCond;
             }
         }
+        // FIXME - names and doc
+        // packet_in externs
+        if(em->originalExternType->name.name == P4::P4CoreLibrary::instance.packetIn.name){
+            // convert extrat to extract, hdr.setValid()
+            if(em->method->name.name == P4::P4CoreLibrary::instance.packetIn.extract.name) {
+                auto arg0 = em->expr->arguments->at(0);
+                auto hdrT = typeMap->getType(arg0, true);
+                if(hdrT->is<IR::Type_Header>()){
+                    auto st = arg0->expression;
+                    auto mc = new IR::Member(s->srcInfo, st, IR::Type_Header::setValid);
+                    auto call = new IR::MethodCallExpression(mc, new IR::Vector<IR::Argument>());
+                    auto newVec = new IR::IndexedVector<IR::StatOrDecl>();
+                    newVec->push_back(s);
+                    newVec->push_back(new IR::MethodCallStatement(call));
+                    LOG1("Converting " << s );
+                    LOG2("to\n" << newVec);
+                    return new IR::BlockStatement(*newVec);
+                }
+            }
         }
-        return s;   
+    }
+        return s;
     }
 }
