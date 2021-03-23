@@ -27,13 +27,16 @@ limitations under the License.
 #include "p4/typeMap.h"
 #include "midend/interpreter.h"
 #include <stack>
+#include <vector>
 
 namespace FPGA{
 
 class DoStaticEvaluation : public Inspector{
     P4::TypeMap* typeMap;
     P4::ReferenceMap *refMap;
-    std::stack<ordered_map<const IR::StructField*, bool>*> *hdr_stack;
+    typedef ordered_map<const IR::StructField*, bool> hdr_value;
+    hdr_value* hdr;
+    std::vector<hdr_value*> *hdr_vec;
     public:
     /**
     Inspector class for static evaluation of P4 program
@@ -51,8 +54,15 @@ class DoStaticEvaluation : public Inspector{
 
 
     private:
-    ordered_map<const IR::StructField*, bool>* new_hdrMap(){
-        return new ordered_map<const IR::StructField*, bool>;
+    hdr_value* new_hdrMap(){
+        return new hdr_value;
+    }
+    hdr_value* copy_hdrMap(hdr_value* prev){
+        auto newMap = new_hdrMap();
+        for(auto i: *prev){
+            newMap->emplace(i.first, i.second);
+        }
+        return newMap;
     }
 };
 

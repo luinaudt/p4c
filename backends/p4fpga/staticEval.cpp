@@ -30,8 +30,7 @@ namespace FPGA {
 
 bool DoStaticEvaluation::preorder(const IR::ToplevelBlock *tlb) {
   LOG1("visiting program according to execution order");
-  hdr_stack = new std::stack<ordered_map<const IR::StructField*, bool>*>();
-  hdr_stack->emplace(new_hdrMap());
+  hdr_vec = new std::vector<hdr_value*>();
   auto main = tlb->getMain();
   auto param = main->getConstructorParameters();
   for (auto i : *param) {
@@ -46,13 +45,14 @@ bool DoStaticEvaluation::preorder(const IR::ToplevelBlock *tlb) {
       LOG1("other " << arg->toString());
     }
   }
-  while (!hdr_stack->empty()) {
-      for(auto i : *hdr_stack->top()){
+  //while (!hdr_stack->empty()) {
+    for(auto j : *hdr_vec){
+      for(auto i : *j){
           LOG1("hdr " << i.first->name << 
           " of Type " << typeMap->getType(i.first)->to<IR::Type_Header>()->name <<
           " is " << ((i.second) ? "true" : "false"));
       }
-      hdr_stack->pop();
+      //hdr_stack->pop();
   }
   return true;
 }
@@ -64,11 +64,12 @@ bool DoStaticEvaluation::preorder(const IR::P4Parser *block){
         ::error(ErrorType::ERR_UNEXPECTED,
                 "%1%: param is not a struct", param);
     }
+    hdr = new hdr_value();
     auto paramType = param->to<IR::Type_Struct>();
     for(auto i : paramType->fields){
         auto elem = typeMap->getType(i);
         if(elem->is<IR::Type_Header>()){
-            hdr_stack->top()->emplace(i, false);
+            hdr->emplace(i, false);
         }
         else{
             P4C_UNIMPLEMENTED("only header are supporter for static analysis");
@@ -97,7 +98,7 @@ bool DoStaticEvaluation::preorder(const IR::MethodCallStatement *stat){
             em->method->name.name == P4::P4CoreLibrary::instance.packetIn.extract.name) {
             auto mc = stat->methodCall;
             auto arg = mc->arguments->at(0);
-            LOG1(arg);
+            LOG1(arg->to<IR::StructField>() );
         }
     }
     return true;
