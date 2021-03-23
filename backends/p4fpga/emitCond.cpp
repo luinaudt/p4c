@@ -44,6 +44,7 @@ namespace FPGA{
                 return newCond;
             }
         }
+        /*
         // FIXME - names and doc
         // packet_in externs
         if(em->originalExternType->name.name == P4::P4CoreLibrary::instance.packetIn.name){
@@ -63,7 +64,7 @@ namespace FPGA{
                     return new IR::BlockStatement(*newVec);
                 }
             }
-        }
+        }*/
     }
         return s;
     }
