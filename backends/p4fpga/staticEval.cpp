@@ -18,6 +18,7 @@ limitations under the License.
 #include "backends/p4fpga/staticEval.h"
 #include "ir/ir-generated.h"
 #include "ir/ir.h"
+#include "ir/node.h"
 #include "lib/error.h"
 #include "lib/exceptions.h"
 #include "lib/indent.h"
@@ -70,15 +71,31 @@ bool DoStaticEvaluation::preorder(const IR::P4Parser *block){
     evaluator = new P4::ExpressionEvaluator(refMap, typeMap, hdr);
     auto val = factory->create(paramType, true);
     hdr->set(hdrIn, val);
+    auto pktIn = block->getApplyParameters()->parameters.at(0);
+    val = factory->create(typeMap->getType(pktIn), false);
+    hdr->set(pktIn, val);
     LOG1(val);
-    visit(block->states);
-    hdr_vec->push_back(hdr);
     return true;
 }
+void DoStaticEvaluation::postorder(const IR::P4Parser *block){
+    hdr_vec->push_back(hdr);
+    LOG1_UNINDENT;
+};
+
 bool DoStaticEvaluation::preorder(const IR::ParserState *s){
     LOG1("visiting parser state " << s->name << IndentCtl::indent);
     return true;
 }
+bool DoStaticEvaluation::preorder(const IR::SelectCase *s){
+    LOG2(s->static_type_name() << " "<< s);
+    auto etat = s->state;
+    visit(refMap->getDeclaration(etat->path)->to<IR::Node>());
+    return true;
+}
+void DoStaticEvaluation::postorder(const IR::SelectCase *s){
+    LOG2("postorder " << s->static_type_name() << " "<< s);
+}
+
 bool DoStaticEvaluation::preorder(const IR::P4Control *block){
     LOG1("visiting " << block->static_type_name() << " " << block->getName() << IndentCtl::indent);
     auto hdrIn = block->getApplyParameters()->parameters.at(0);
@@ -94,7 +111,6 @@ bool DoStaticEvaluation::preorder(const IR::P4Control *block){
     }
     auto newMap = new P4::ValueMap();
     newMap->set(hdrIn, hdr->map.begin()->second);
-    LOG1(newMap);
     hdr = newMap;
     evaluator = new P4::ExpressionEvaluator(refMap, typeMap, hdr);
     return true;
@@ -103,21 +119,19 @@ bool DoStaticEvaluation::preorder(const IR::P4Control *block){
 bool DoStaticEvaluation::preorder(const IR::MethodCallStatement *stat){
     LOG2(stat->static_type_name() << "  "<< stat->toString());
     auto mi = P4::MethodInstance::resolve(stat->methodCall, refMap, typeMap);
-    if(mi->is<P4::BuiltInMethod>()){
-        auto bim = mi->to<P4::BuiltInMethod>();
-        if(bim->name.name == IR::Type_Header::isValid){
-            LOG2(stat->toString() << " isValid Method");
-            return false;
-        }
+    if(auto bim = mi->to<P4::BuiltInMethod>()){
+        LOG2(bim);
     }
     if(mi->is<P4::ExternMethod>()){
-        return false;
+        // avoid evaluation of packet.extract
+        return true;
     }
     return true;
 }
 bool DoStaticEvaluation::preorder(const IR::MethodCallExpression *expr){
     LOG2(expr->static_type_name() << "  "<< expr->toString());
-    evaluator->evaluate(expr, false);
+    auto res = evaluator->evaluate(expr, false);
+    LOG2(res);
     return true;
 }
 
