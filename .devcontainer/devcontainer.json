@@ -13,7 +13,13 @@
 	},
 
 	// Add the IDs of extensions you want installed when the container is created.
-	"extensions": ["ms-vscode.cpptools","llvm-vs-code-extensions.vscode-clangd", "ms-vscode.cmake-tools", "chriswheeldon.exuberant-ctags"]
+	"extensions": [
+		"ms-vscode.cpptools",
+		"llvm-vs-code-extensions.vscode-clangd",
+		"ms-vscode.cmake-tools",
+		"chriswheeldon.exuberant-ctags",
+		"coolchyni.beyond-debug"
+	]
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
