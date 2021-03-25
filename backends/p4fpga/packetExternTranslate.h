@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#ifndef BACKENDS_FPGA_EMITCOND_H_
-#define BACKENDS_FPGA_EMITCOND_H_
+#ifndef BACKENDS_FPGA_PACKETEXTERNTRANSLATE_H_
+#define BACKENDS_FPGA_PACKETEXTERNTRANSLATE_H_
 
 #include "ir/ir.h"
 #include "ir/visitor.h"
@@ -79,4 +79,4 @@ namespace FPGA{
 
 }
 
-#endif /* BACKENDS_FPGA_EMITCOND_H_ */
+#endif /* BACKENDS_FPGA_PACKETEXTERNTRANSLATE_H_ */
