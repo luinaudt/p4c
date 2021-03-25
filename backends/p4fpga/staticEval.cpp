@@ -16,7 +16,6 @@ limitations under the License.
 
 
 #include "backends/p4fpga/staticEval.h"
-#include "ir/ir-generated.h"
 #include "ir/ir.h"
 #include "ir/node.h"
 #include "lib/error.h"

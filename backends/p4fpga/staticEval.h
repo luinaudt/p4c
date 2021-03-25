@@ -17,7 +17,6 @@ limitations under the License.
 #define BACKENDS_FPGA_STATICEVAL_H_
 
 #include "common/resolveReferences/referenceMap.h"
-#include "ir/ir-generated.h"
 #include "ir/ir.h"
 #include "ir/pass_manager.h"
 #include "ir/vector.h"

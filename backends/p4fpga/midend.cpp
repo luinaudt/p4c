@@ -15,7 +15,7 @@ limitations under the License.
 */
 #include "backends/p4fpga/midend.h"
 #include "common/constantFolding.h"
-#include "ir/ir-generated.h"
+#include "ir/ir.h"
 #include "ir/pass_manager.h"
 #include "frontends/p4/evaluator/evaluator.h"
 #include "frontends/p4/typeChecking/typeChecker.h"
@@ -46,7 +46,7 @@ namespace FPGA {
             new P4::TypeChecking(&refMap, &typeMap),
             new P4::SimplifyParsers(&refMap),
             new P4::TypeChecking(&refMap, &typeMap),
-            new P4::ParsersUnroll(true, &refMap, &typeMap),
+            options.loopsUnrolling ?  new P4::ParsersUnroll(true, &refMap, &typeMap) : nullptr,
             new P4::ExpandEmit(&refMap, &typeMap),
             new P4::TypeChecking(&refMap, &typeMap),
             new EmitCond(&refMap, &typeMap),
