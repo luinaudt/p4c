@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "backends/p4fpga/midend.h"
+#include "backends/p4fpga/packetExternTranslate.h"
 #include "common/constantFolding.h"
 #include "ir/ir.h"
 #include "ir/pass_manager.h"
@@ -47,9 +47,7 @@ namespace FPGA {
             new P4::SimplifyParsers(&refMap),
             new P4::TypeChecking(&refMap, &typeMap),
             options.loopsUnrolling ?  new P4::ParsersUnroll(true, &refMap, &typeMap) : nullptr,
-            new P4::ExpandEmit(&refMap, &typeMap),
-            new P4::TypeChecking(&refMap, &typeMap),
-            new EmitCond(&refMap, &typeMap),
+            new PacketExternTranslate(&refMap, &typeMap),
             new P4::FlattenHeaders(&refMap, &typeMap),
             new P4::MoveDeclarations(),  // more may have been introduced
             new P4::ConstantFolding(&refMap, &typeMap),
@@ -60,10 +58,10 @@ namespace FPGA {
             new VisitFunctor([this, evaluator]() { // set toplevel
                              toplevel = evaluator->getToplevelBlock(); }),
             new StaticEvaluation(&refMap, &typeMap),
-            new P4::MidEndLast(),
             evaluator,
             new VisitFunctor([this, evaluator]() { // set toplevel
-                                toplevel = evaluator->getToplevelBlock(); }) 
+                                toplevel = evaluator->getToplevelBlock(); }), 
+            new P4::MidEndLast()
         });
         if (options.excludeMidendPasses) {
             removePasses(options.passesToExcludeMidend);

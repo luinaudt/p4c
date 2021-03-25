@@ -23,14 +23,14 @@ set (P4FPGA_SRCS
   main.cpp
   depGraphCloser.cpp
   deparser.cpp
-  emitCond.cpp
+  packetExternTranslate.cpp
   midend.cpp
   staticEval.cpp
   )
 set (P4FPGA_HDRS
   p4fpga.h
   staticEval.h
-  emitCond.h
+  packetExternTranslate.h
   depGraphCloser.h
   options.h
   midend.h
@@ -60,7 +60,7 @@ add_dependencies(p4c_driver linkp4fpga)
 
 ## Tests
 #
-#set(P4FPGA_DRIVER ${P4C_SOURCE_DIR}/backends/p4fpga/run-p4-sample.py)
+set(P4FPGA_DRIVER ${P4C_SOURCE_DIR}/backends/p4fpga/run-p4-sample.py)
 #
 #set (P4FPGA_SUITES
 #  "${P4C_SOURCE_DIR}/testdata/p4_16_samples/*.p4"
