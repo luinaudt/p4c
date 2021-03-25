@@ -13,7 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "backends/p4fpga/packetExternTranslate.h"
+
+#include "backends/p4fpga/midend.h"
 #include "common/constantFolding.h"
 #include "ir/ir.h"
 #include "ir/pass_manager.h"
@@ -32,7 +33,6 @@ limitations under the License.
 #include "p4/moveDeclarations.h"
 #include "p4/simplify.h"
 #include "p4/typeMap.h"
-#include "p4fpga/emitCond.h"
 
 namespace FPGA {
     MidEnd::MidEnd(CompilerOptions& options){
@@ -47,7 +47,7 @@ namespace FPGA {
             new P4::SimplifyParsers(&refMap),
             new P4::TypeChecking(&refMap, &typeMap),
             options.loopsUnrolling ?  new P4::ParsersUnroll(true, &refMap, &typeMap) : nullptr,
-            new PacketExternTranslate(&refMap, &typeMap),
+            new PacketExternTranslate(&refMap, &typeMap, true, true),
             new P4::FlattenHeaders(&refMap, &typeMap),
             new P4::MoveDeclarations(),  // more may have been introduced
             new P4::ConstantFolding(&refMap, &typeMap),
