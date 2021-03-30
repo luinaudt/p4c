@@ -46,7 +46,7 @@ namespace FPGA {
             new P4::TypeChecking(&refMap, &typeMap),
             new P4::SimplifyParsers(&refMap),
             new P4::TypeChecking(&refMap, &typeMap),
-            options.loopsUnrolling ?  new P4::ParsersUnroll(true, &refMap, &typeMap) : nullptr,
+            options.loopsUnrolling ? new P4::ParsersUnroll(true, &refMap, &typeMap) : nullptr,
             new PacketExternTranslate(&refMap, &typeMap, true, true),
             new P4::FlattenHeaders(&refMap, &typeMap),
             new P4::MoveDeclarations(),  // more may have been introduced
