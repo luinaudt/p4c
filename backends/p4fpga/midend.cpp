@@ -54,9 +54,6 @@ namespace FPGA {
             new P4::LocalCopyPropagation(&refMap, &typeMap),
             new P4::ConstantFolding(&refMap, &typeMap),
             new P4::SimplifyControlFlow(&refMap, &typeMap),
-            evaluator,
-            new VisitFunctor([this, evaluator]() { // set toplevel
-                             toplevel = evaluator->getToplevelBlock(); }),
             new StaticEvaluation(&refMap, &typeMap),
             evaluator,
             new VisitFunctor([this, evaluator]() { // set toplevel
