@@ -20,6 +20,7 @@ limitations under the License.
 #include "ir/ir.h"
 #include "ir/node.h"
 #include "lib/error.h"
+#include "lib/error_catalog.h"
 #include "lib/exceptions.h"
 #include "lib/indent.h"
 #include "lib/log.h"
@@ -32,30 +33,50 @@ limitations under the License.
 namespace FPGA {
 
 bool DoStaticEvaluation::preorder(const IR::ToplevelBlock *tlb) {
-  LOG1("visiting program according to execution order");
-  hdr_vec = new std::vector<P4::ValueMap*>();
-  auto main = tlb->getMain();
-  auto param = main->getConstructorParameters();
-  for (auto i : *param) {
-    auto arg = main->getParameterValue(i->getName());
-    if (arg->is<IR::ParserBlock>()) {
-      auto block = arg->to<IR::ParserBlock>()->container;
-      visit(block);
-    } else if (arg->is<IR::ControlBlock>()) {
-      auto block = arg->to<IR::ControlBlock>()->container;
-      visit(block);
-    } else {
-      LOG1("other " << arg->toString());
+    LOG1("visiting program according to execution order");
+    hdr_vec = new std::vector<P4::ValueMap*>();
+    auto main = tlb->getMain();
+    auto param = main->getConstructorParameters();
+    for (auto i : *param) {
+        auto arg = main->getParameterValue(i->getName());
+        if (arg->is<IR::ParserBlock>()) {
+            auto block = arg->to<IR::ParserBlock>()->container;
+            visit(block);
+        } else if (arg->is<IR::ControlBlock>()) {
+            auto block = arg->to<IR::ControlBlock>()->container;
+            visit(block);
+        } else {
+            LOG1("other " << arg->toString());
+        }
     }
-  }
-  //while (!hdr_stack->empty()) {
+    auto tmpHdr = hdr->map.begin()->second->clone()->to<P4::SymbolicStruct>();
+    tmpHdr->setAllUnknown();
+    LOG1(tmpHdr);
     for(auto j : *hdr_vec){
-      for(auto i : j->map){
-          LOG1(i.first << 
+        for(auto i : j->map){
+            if(i.second->is<P4::SymbolicStruct>()){
+                auto hdr_elems = i.second->to<P4::SymbolicStruct>();
+                for(auto he : hdr_elems->fieldValue){
+                    LOG3("analyzing " << he.first);
+                    if(he.second->is<P4::SymbolicHeader>()){
+                        tmpHdr->set(he.first, he.second);
+                    }   
+                }
+            }
+            LOG1(i.first << 
                 " of " << i.second);
-      }
-      //hdr_stack->pop();
-  }
+        } 
+    }
+    for(auto i: tmpHdr->fieldValue){
+        LOG3("checking usage of " << i.first);
+        if(i.second->is<P4::SymbolicHeader>()){
+            auto h = i.second->to<P4::SymbolicHeader>();
+            if(h->valid->isUnknown() || !h->valid->value){
+                LOG3("validity : " << h->valid);
+                ::warning(ErrorType::WARN_UNUSED, "header %1% is not used", i.first);
+            }
+        }
+    }
   return true;
 }
 
@@ -124,10 +145,12 @@ bool DoStaticEvaluation::preorder(const IR::P4Control *block){
     LOG1("visiting " << block->static_type_name() << " " << block->getName() << IndentCtl::indent);
     auto hdrIn = block->getApplyParameters()->parameters.at(0);
     auto paramType = typeMap->getType(hdrIn);
+    bool isDep = false;
     if(!paramType->is<IR::Type_Struct>()){
         //FIXME - Special case for deparser 
         hdrIn = block->getApplyParameters()->parameters.at(1);
         paramType = typeMap->getType(hdrIn);
+        isDep = true;
     }
     if(!paramType->is<IR::Type_Struct>()){
         ::error(ErrorType::ERR_UNEXPECTED,
@@ -137,8 +160,12 @@ bool DoStaticEvaluation::preorder(const IR::P4Control *block){
     newMap->set(hdrIn, hdr->map.begin()->second);
     hdr = newMap;
     evaluator = new P4::ExpressionEvaluator(refMap, typeMap, hdr);
+    // FIXME - for test
+    if (isDep){
+        return true;
+    }
     LOG1_UNINDENT;
-    return false;
+    return isDep;
 }
 
 bool DoStaticEvaluation::preorder(const IR::MethodCallStatement *stat){
