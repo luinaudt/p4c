@@ -17,6 +17,7 @@ limitations under the License.
 #define BACKENDS_FPGA_STATICEVAL_H_
 
 #include "common/resolveReferences/referenceMap.h"
+#include "ir/ir-generated.h"
 #include "ir/ir.h"
 #include "ir/pass_manager.h"
 #include "ir/vector.h"
@@ -49,13 +50,14 @@ class DoStaticEvaluation : public Inspector{
                     setName("DoStaticEvaluation");}
     bool preorder(const IR::ToplevelBlock *tlb);
     bool preorder(const IR::P4Parser *block);
+    bool preorder(const IR::SelectExpression *s);
     bool preorder(const IR::SelectCase *s);
     void postorder(const IR::SelectCase *s);
+    bool preorder(const IR::Path *path);
     bool preorder(const IR::P4Control *block);
     bool preorder(const IR::MethodCallStatement *stat);
     bool preorder(const IR::MethodCallExpression *expr);
     bool preorder(const IR::ParserState *state);
-    void postorder(const IR::P4Parser *block);
     void postorder(const IR::P4Control *block){LOG1_UNINDENT;};
     void postorder(const IR::ParserState *s){LOG1_UNINDENT;};
 
