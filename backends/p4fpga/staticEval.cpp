@@ -89,9 +89,6 @@ bool DoStaticEvaluation::preorder(const IR::P4Parser *block){
     evaluator = new P4::ExpressionEvaluator(refMap, typeMap, hdr);
     auto val = factory->create(paramType, true);
     hdr->set(hdrIn, val);
-    auto pktIn = block->getApplyParameters()->parameters.at(0);
-    val = factory->create(typeMap->getType(pktIn), false);
-    hdr->set(pktIn, val);
     // we start by visiting start state, ignore any unfollowed states
     for (auto s : block->states){
         if (s->name.name == IR::ParserState::start){
@@ -170,14 +167,13 @@ bool DoStaticEvaluation::preorder(const IR::Path *path){
             path->name == IR::ParserState::reject){
         LOG2("terminal state");
         update_hdr_vec(hdr->clone());
-        return true;
     }
     auto next=refMap->getDeclaration(path, false)->to<IR::Node>();
     if (next->is<IR::ParserState>()){
         LOG2("next state is : " << path->name);
         visit(next);
     }
-    return true;
+    return false;
 }
 bool DoStaticEvaluation::preorder(const IR::P4Control *block){
     LOG1("visiting " << block->static_type_name() << " " << block->getName() << IndentCtl::indent);
@@ -218,7 +214,7 @@ bool DoStaticEvaluation::preorder(const IR::MethodCallExpression *expr){
     auto res = evaluator->evaluate(expr, false);
     LOG2("evaluation of " << expr->toString());
     LOG3("  got: " << res);
-    return true;
+    return false;
 }
 
 }  // namespace FPGA
