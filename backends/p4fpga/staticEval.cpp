@@ -27,7 +27,6 @@ limitations under the License.
 #include "lib/ordered_map.h"
 #include "midend/interpreter.h"
 #include "p4/methodInstance.h"
-#include <iostream>
 #include <stack>
 
 namespace FPGA {
@@ -164,11 +163,10 @@ void DoStaticEvaluation::update_hdr_vec(P4::ValueMap* val){
     if(!in){
         hdr_vec->push_back(val);
         prev=val;
-        std::cout << "Number valid headers possible = " << hdr_vec->size() <<"\n";
         LOG2("pushing valid headers : " << val);
-    }
-    else {
-        LOG3("valid headers already exists : " << val);
+    } 
+    else{ 
+        LOG3("valid headers already exists : " << val); 
     }
 }
 bool DoStaticEvaluation::preorder(const IR::Path *path){
