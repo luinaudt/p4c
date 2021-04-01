@@ -14,37 +14,37 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#ifndef P4FPGA_H_
-#define P4FPGA_H_
+#ifndef BACKENDS_P4FPGA_P4FPGA_H_
+#define BACKENDS_P4FPGA_P4FPGA_H_
 
 #include "backends/p4fpga/JsonObjects.h"
 #include "ir/ir.h"
 #include "lib/json.h"
 #include "backends/p4fpga/options.h"
-#include <cstring>
-#include <ostream>
 #include "frontends/common/resolveReferences/referenceMap.h"
 #include "frontends/p4/typeMap.h"
 #include "midend/convertEnums.h"
 
 
 namespace FPGA {
-    class FPGABackend {
-        P4FpgaOptions& options;
-        FPGA::FPGAJson* json;
-        unsigned busOutWidth;
-        P4::ReferenceMap*    refMap;
-        P4::TypeMap*         typeMap;
-        P4::ConvertEnums::EnumMapping enumMap;
-        
-    public:
-        void serialize(std::ostream& out) const {json->serialize(out);};
-        FPGABackend(P4FpgaOptions& options, 
-                    P4::ReferenceMap* refMap, P4::TypeMap* typeMap);
-        void convert(const IR::ToplevelBlock* tlb);
+class FPGABackend {
+    P4FpgaOptions& options;
+    FPGA::FPGAJson* json;
+    unsigned busOutWidth;
+    P4::ReferenceMap*    refMap;
+    P4::TypeMap*         typeMap;
+    P4::ConvertEnums::EnumMapping enumMap;
+
+ public:
+    void serialize(std::ostream& out) const{
+        json->serialize(out);
     };
+    FPGABackend(P4FpgaOptions& options,
+                P4::ReferenceMap* refMap, P4::TypeMap* typeMap);
+    void convert(const IR::ToplevelBlock* tlb);
+};
 
 
 }  // namespace FPGA
 
-#endif 
+#endif  // BACKENDS_P4FPGA_P4FPGA_H_

@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#ifndef BACKENDS_FPGA_OPTIONS_H_
-#define BACKENDS_FPGA_OPTIONS_H_
+#ifndef BACKENDS_P4FPGA_OPTIONS_H_
+#define BACKENDS_P4FPGA_OPTIONS_H_
 #include "frontends/common/options.h"
 #include <stdlib.h>
 
@@ -27,7 +27,7 @@ class P4FpgaOptions : public CompilerOptions {
     cstring outputFile = "a.out";
     unsigned outBusWidth = 64;
     P4FpgaOptions() {
-        registerOption("--outputWidth", "width", 
+        registerOption("--outputWidth", "width",
                       [this](const char* arg) {
                         outBusWidth = strtoul(arg, nullptr, 10);
                         return true;},
@@ -45,4 +45,4 @@ class P4FpgaOptions : public CompilerOptions {
 
 using FpgaContext = P4CContextWithOptions<P4FpgaOptions>;
 }
-#endif
+#endif  // BACKENDS_P4FPGA_OPTIONS_H_

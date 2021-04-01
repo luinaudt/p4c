@@ -35,33 +35,35 @@ limitations under the License.
 #include "p4/typeMap.h"
 
 namespace FPGA {
-    MidEnd::MidEnd(CompilerOptions& options){
-        // temporary
-        auto convertEnums = new P4::ConvertEnums(&refMap, &typeMap, new EnumOn32Bits("v1model.p4"));        // evaluator compiler-design.pptx slide 77
-        auto evaluator = new P4::EvaluatorPass(&refMap, &typeMap);
-        addPasses({
-            new P4::EliminateNewtype(&refMap, &typeMap),
-            convertEnums, new VisitFunctor([this, convertEnums]() { enumMap = convertEnums->getEnumMapping(); }),
-            new P4::ResolveReferences(&refMap),
-            new P4::TypeChecking(&refMap, &typeMap),
-            new P4::SimplifyParsers(&refMap),
-            new P4::TypeChecking(&refMap, &typeMap),
-            options.loopsUnrolling ? new P4::ParsersUnroll(true, &refMap, &typeMap) : nullptr,
-            new PacketExternTranslate(&refMap, &typeMap, true, true),
-            new P4::FlattenHeaders(&refMap, &typeMap),
-            new P4::MoveDeclarations(),  // more may have been introduced
-            new P4::ConstantFolding(&refMap, &typeMap),
-            new P4::LocalCopyPropagation(&refMap, &typeMap),
-            new P4::ConstantFolding(&refMap, &typeMap),
-            new P4::SimplifyControlFlow(&refMap, &typeMap),
-            new StaticEvaluation(&refMap, &typeMap),
-            evaluator,
-            new VisitFunctor([this, evaluator]() { // set toplevel
-                                toplevel = evaluator->getToplevelBlock(); }), 
-            new P4::MidEndLast()
-        });
-        if (options.excludeMidendPasses) {
-            removePasses(options.passesToExcludeMidend);
-        }
+MidEnd::MidEnd(CompilerOptions& options){
+    // temporary
+    auto convertEnums = new P4::ConvertEnums(&refMap, &typeMap,
+                                            new EnumOn32Bits("v1model.p4"));
+    auto evaluator = new P4::EvaluatorPass(&refMap, &typeMap);
+    addPasses({
+        new P4::EliminateNewtype(&refMap, &typeMap),
+        convertEnums, new VisitFunctor([this, convertEnums]() {
+                        enumMap = convertEnums->getEnumMapping(); }),
+        new P4::ResolveReferences(&refMap),
+        new P4::TypeChecking(&refMap, &typeMap),
+        new P4::SimplifyParsers(&refMap),
+        new P4::TypeChecking(&refMap, &typeMap),
+        options.loopsUnrolling ? new P4::ParsersUnroll(true, &refMap, &typeMap) : nullptr,
+        new PacketExternTranslate(&refMap, &typeMap, true, true),
+        new P4::FlattenHeaders(&refMap, &typeMap),
+        new P4::MoveDeclarations(),  // more may have been introduced
+        new P4::ConstantFolding(&refMap, &typeMap),
+        new P4::LocalCopyPropagation(&refMap, &typeMap),
+        new P4::ConstantFolding(&refMap, &typeMap),
+        new P4::SimplifyControlFlow(&refMap, &typeMap),
+        new StaticEvaluation(&refMap, &typeMap),
+        evaluator,
+        new VisitFunctor([this, evaluator](){  // set toplevel
+                            toplevel = evaluator->getToplevelBlock(); }),
+        new P4::MidEndLast()
+    });
+    if (options.excludeMidendPasses) {
+        removePasses(options.passesToExcludeMidend);
     }
 }
+}  // namespace FPGA

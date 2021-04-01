@@ -14,25 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#ifndef BACKENDS_FPGA_JSONOBJECTS_H_
-#define BACKENDS_FPGA_JSONOBJECTS_H_
+#ifndef BACKENDS_P4FPGA_JSONOBJECTS_H_
+#define BACKENDS_P4FPGA_JSONOBJECTS_H_
 
 #include "ir/ir.h"
 #include "lib/json.h"
 #include "p4fpga/options.h"
-#include <ostream>
-#include <vector>
 namespace FPGA {
-    class FPGAJson {
-        Util::JsonObject* toplevel;
-        //TODO: support various type of architecture
-        Util::JsonObject* parser;
-        Util::JsonObject* control;
-        Util::JsonObject* deparser;
-        public:
-            void serialize(std::ostream& out) const {toplevel->serialize(out);};
-            void setDeparser(Util::JsonObject* jo);
-            FPGAJson(FPGA::P4FpgaOptions& options);
+class FPGAJson {
+    Util::JsonObject* toplevel;
+    // TODO: support various type of architecture
+    Util::JsonObject* parser;
+    Util::JsonObject* control;
+    Util::JsonObject* deparser;
+
+ public:
+    explicit FPGAJson(FPGA::P4FpgaOptions& options);
+    void serialize(std::ostream& out) const {
+        toplevel->serialize(out);
     };
+    void setDeparser(Util::JsonObject* jo);
+};
 }
-#endif // BACKENDS_FPGA_JSONOBJECTS_H_
+#endif  // BACKENDS_P4FPGA_JSONOBJECTS_H_

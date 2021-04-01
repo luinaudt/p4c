@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include <vector>
 #include "backends/p4fpga/deparser.h"
 #include "ir/indexed_vector.h"
 #include "ir/ir-generated.h"
@@ -25,25 +26,20 @@ limitations under the License.
 #include "lib/ordered_set.h"
 #include "p4/methodInstance.h"
 #include "p4fpga/JsonObjects.h"
-#include <iostream>
-#include <ostream>
-#include <stack>
-#include <string>
-#include <vector>
 
 namespace FPGA {
 
 void DeparserConverter::insertTransition(){
     cstring label = "";
-    if(condList->size() > 0){
-        for(auto c : *condList){
+    if (condList->size() > 0){
+        for (auto c : *condList){
             label += c + " ";
         }
     }
-    if(previousState){
+    if (previousState){
         LOG2("inserting links :" << IndentCtl::indent);
-        for(auto ps : *previousState){
-            for(auto cs : *currentState){
+        for (auto ps : *previousState){
+            for (auto cs : *currentState){
                 LOG2(ps << " -> " << cs);
                 auto *transition = new Util::JsonObject();
                 transition->emplace("source", ps);
@@ -53,7 +49,7 @@ void DeparserConverter::insertTransition(){
             }
         }
         LOG2_UNINDENT;
-    }   
+    }
 }
 
 void DeparserConverter::insertState(cstring state){
@@ -71,16 +67,16 @@ bool DeparserConverter::preorder(const IR::IfStatement* block){
     if (block->ifFalse != nullptr){
         condList->pop_back();
         condList->push_back("!" + block->condition->toString());
-        auto stateTrue = currentState; // save state in True
+        auto stateTrue = currentState;  // save state in True
         currentState = oriState;
         visit(block->ifFalse);
         // append state true to false
-        for(auto cs : *stateTrue){
+        for (auto cs : *stateTrue){
             currentState->insert(cs);
         }
     }
     // append state ori to state true
-    for(auto cs : *oriState){
+    for (auto cs : *oriState){
         currentState->insert(cs);
     }
     condList->pop_back();
@@ -121,7 +117,7 @@ void DeparserConverter::postorder(const IR::P4Control* control) {
     auto lastState = cstring("<end>");
     insertState(lastState);
     insertTransition();
-    for(auto i : *state_set){
+    for (auto i : *state_set){
         Util::JsonObject* tmp = new Util::JsonObject();
         tmp->emplace("id", i);
         state->append(tmp);
@@ -130,4 +126,4 @@ void DeparserConverter::postorder(const IR::P4Control* control) {
     dep->emplace("links", links);
     json->setDeparser(dep);
 }
-}
+}  // namespace FPGA

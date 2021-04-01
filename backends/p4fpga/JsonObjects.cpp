@@ -22,17 +22,14 @@ namespace FPGA {
         toplevel = new Util::JsonObject();
         parser   = new Util::JsonObject();
         control  = new Util::JsonObject();
-        //deparser = new Util::JsonObject();
         // place top level parameters.
         toplevel->emplace("outputBus", options.outBusWidth);
         toplevel->emplace("parser", parser);
         toplevel->emplace("control", control);
-        //toplevel->emplace("deparser", deparser);
     }
 
     void FPGAJson::setDeparser(Util::JsonObject* jo){
         deparser = jo;
         toplevel->emplace("deparser", deparser);
     }
-
 }

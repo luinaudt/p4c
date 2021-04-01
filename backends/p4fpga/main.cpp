@@ -65,7 +65,7 @@ int main(int argc, char *const argv[]) {
     }
     if (program == nullptr || ::errorCount() > 0)
         return 1;
-    
+
     // midend here
     FPGA::MidEnd midEnd(options);
     midEnd.addDebugHook(hook);
@@ -91,8 +91,7 @@ int main(int argc, char *const argv[]) {
         if (out != nullptr) {
             backend->serialize(*out);
             out->flush();
-        }
-        else {
+        }else {
             ::error(ErrorType::ERR_IO, "%s: Can't open file", options.outputFile);
             return 1;
         }

@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#ifndef BACKENDS_FPGA_COMMON_MIDEND_H_
-#define BACKENDS_FPGA_COMMON_MIDEND_H_
+#ifndef BACKENDS_P4FPGA_MIDEND_H_
+#define BACKENDS_P4FPGA_MIDEND_H_
 
 #include "frontends/common/resolveReferences/referenceMap.h"
 #include "ir/ir.h"
@@ -71,4 +71,4 @@ class MidEnd : public PassManager {
 
 }  // namespace FPGA
 
-#endif /* BACKENDS_FPGA_COMMON_MIDEND_H_ */
+#endif  // BACKENDS_P4FPGA_MIDEND_H_
