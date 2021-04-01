@@ -28,7 +28,7 @@ class DeparserGraphCloser : public Transform{
     P4::ReferenceMap* refMap;
     P4::TypeMap* typeMap;
  protected:
-        const IR::Node* convertBody(const IR::Vector<IR::StatOrDecl>* body);
+    const IR::Node* convertBody(const IR::Vector<IR::StatOrDecl>* body);
 
  public:
     const IR::Node* preorder(IR::P4Control* ctrl);
