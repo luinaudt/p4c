@@ -35,9 +35,16 @@ class DoStaticEvaluation : public Inspector{
     P4::TypeMap* typeMap;
     P4::ReferenceMap *refMap;
     P4::ValueMap* hdr;
+    std::stack<P4::ValueMap*> hdr_stack;
     std::vector<P4::ValueMap*> *hdr_vec;
     const P4::SymbolicValueFactory* factory;
     P4::ExpressionEvaluator* evaluator;
+
+    /**
+    insert val into hdr_vec, check if there is no duplicate
+    */
+    void update_hdr_vec(P4::ValueMap* val);
+
     public:
     /**
     Inspector class for static evaluation of P4 program
@@ -52,14 +59,17 @@ class DoStaticEvaluation : public Inspector{
     bool preorder(const IR::P4Parser *block);
     bool preorder(const IR::SelectExpression *s);
     bool preorder(const IR::SelectCase *s);
-    void postorder(const IR::SelectCase *s);
     bool preorder(const IR::Path *path);
     bool preorder(const IR::P4Control *block);
     bool preorder(const IR::MethodCallStatement *stat);
     bool preorder(const IR::MethodCallExpression *expr);
     bool preorder(const IR::ParserState *state);
+
+    //postorder
+    void postorder(const IR::SelectCase *s);
     void postorder(const IR::P4Control *block){LOG1_UNINDENT;};
     void postorder(const IR::ParserState *s){LOG1_UNINDENT;};
+    void postorder(const IR::SelectExpression *s);
 
 };
 

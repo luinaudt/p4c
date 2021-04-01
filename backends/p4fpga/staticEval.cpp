@@ -35,6 +35,7 @@ namespace FPGA {
 bool DoStaticEvaluation::preorder(const IR::ToplevelBlock *tlb) {
     LOG1("visiting program according to execution order");
     hdr_vec = new std::vector<P4::ValueMap*>();
+    hdr = new P4::ValueMap();
     auto main = tlb->getMain();
     auto param = main->getConstructorParameters();
     for (auto i : *param) {
@@ -51,14 +52,14 @@ bool DoStaticEvaluation::preorder(const IR::ToplevelBlock *tlb) {
     }
     auto tmpHdr = hdr->map.begin()->second->clone()->to<P4::SymbolicStruct>();
     tmpHdr->setAllUnknown();
-    LOG1(tmpHdr);
     for(auto j : *hdr_vec){
         for(auto i : j->map){
             if(i.second->is<P4::SymbolicStruct>()){
                 auto hdr_elems = i.second->to<P4::SymbolicStruct>();
                 for(auto he : hdr_elems->fieldValue){
                     LOG3("analyzing " << he.first);
-                    if(he.second->is<P4::SymbolicHeader>()){
+                    if(he.second->is<P4::SymbolicHeader>() &&
+                        he.second->to<P4::SymbolicHeader>()->valid->value){
                         tmpHdr->set(he.first, he.second);
                     }   
                 }
@@ -88,7 +89,6 @@ bool DoStaticEvaluation::preorder(const IR::P4Parser *block){
         ::error(ErrorType::ERR_UNEXPECTED,
                 "%1%: param is not a struct", paramType);
     }
-    hdr = new P4::ValueMap();
     evaluator = new P4::ExpressionEvaluator(refMap, typeMap, hdr);
     auto val = factory->create(paramType, true);
     hdr->set(hdrIn, val);
@@ -117,27 +117,72 @@ bool DoStaticEvaluation::preorder(const IR::ParserState *s){
 bool DoStaticEvaluation::preorder(const IR::SelectCase *s){
     LOG2(s->static_type_name() << " "<< s);
     auto etat = s->state;
-    auto oldHdr = hdr->clone();
-    visit(refMap->getDeclaration(etat->path)->to<IR::Node>());
-    hdr = oldHdr;
-    evaluator = new P4::ExpressionEvaluator(refMap, typeMap, hdr);
+   
+    auto next = refMap->getDeclaration(etat->path)->to<IR::Node>();
+    if(next == nullptr){
+        ::error(ErrorType::ERR_UNREACHABLE, "state %1%", s);
+    }
+    LOG2("next Select state is : " << etat->path->name);
+    //visit(etat);
     return true;
 }
 
 void DoStaticEvaluation::postorder(const IR::SelectCase *s){
     LOG2("postorder " << s->static_type_name() << " "<< s);
+    BUG_CHECK(!hdr_stack.empty(), "%1%: empty hdr stack", s);
+    hdr = hdr_stack.top()->clone();
+    evaluator = new P4::ExpressionEvaluator(refMap, typeMap, hdr);
 }
 
 bool DoStaticEvaluation::preorder(const IR::SelectExpression *s){
     LOG2(s->static_type_name() << " "<< s);
+    hdr_stack.push(hdr->clone());
     return true;
+}
+
+void DoStaticEvaluation::postorder(const IR::SelectExpression *s){
+    LOG2("postorder " << s->static_type_name() << " "<< s);
+    BUG_CHECK(!hdr_stack.empty(), "%1%: empty hdr stack", s);
+    hdr = hdr_stack.top()->clone();
+    evaluator = new P4::ExpressionEvaluator(refMap, typeMap, hdr);
+    hdr_stack.pop();
+}
+
+void DoStaticEvaluation::update_hdr_vec(P4::ValueMap* val){
+    static P4::ValueMap* prev = nullptr; //saving previous find, could be a list
+    bool in = prev!=nullptr && prev->equals(val); //possibly in
+    if(!in){ //possibly not
+        //It is highly probable that last inserted will be equal to current
+        for(auto i= hdr_vec->crbegin(); i!=hdr_vec->crend(); ++i){
+            if(val->equals(*i)){
+                in=true;
+                prev=*i;
+                break;
+            }
+        }
+    }
+    if(!in){
+        hdr_vec->push_back(val);
+        prev=val;
+        std::cout << "Number valid headers possible = " << hdr_vec->size() <<"\n";
+        LOG2("pushing valid headers : " << val);
+    }
+    else {
+        LOG3("valid headers already exists : " << val);
+    }
 }
 bool DoStaticEvaluation::preorder(const IR::Path *path){
     LOG3("visiting " << path->static_type_name() << " "<< path);
-    if(path->name == IR::ParserState::accept || path->name == IR::ParserState::reject){
-        hdr_vec->push_back(hdr);
+    if(path->name == IR::ParserState::accept || 
+            path->name == IR::ParserState::reject){
         LOG2("terminal state");
-        LOG3("pushing valid headers : " << hdr);
+        update_hdr_vec(hdr->clone());
+        return true;
+    }
+    auto next=refMap->getDeclaration(path, false)->to<IR::Node>();
+    if(next->is<IR::ParserState>()){
+        LOG2("next state is : " << path->name);
+        visit(next);
     }
     return true;
 }
