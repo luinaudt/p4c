@@ -167,6 +167,7 @@ bool DoStaticEvaluation::preorder(const IR::Path *path){
             path->name == IR::ParserState::reject){
         LOG2("terminal state");
         update_hdr_vec(hdr->clone());
+        return false;
     }
     auto next=refMap->getDeclaration(path, false)->to<IR::Node>();
     if (next->is<IR::ParserState>()){
@@ -202,6 +203,9 @@ bool DoStaticEvaluation::preorder(const IR::P4Control *block){
     return isDep;
 }
 
+/**
+We continue to evaluate call expression for specific expressions only.
+*/
 bool DoStaticEvaluation::preorder(const IR::MethodCallStatement *stat){
     auto mi = P4::MethodInstance::resolve(stat->methodCall, refMap, typeMap);
     if (auto bim = mi->to<P4::BuiltInMethod>()){
