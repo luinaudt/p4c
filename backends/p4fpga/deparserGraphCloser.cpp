@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include <iostream>
+#include "lib/log.h"
 #include "backends/p4fpga/depGraphCloser.h"
 #include "ir/ir-generated.h"
 #include "ir/node.h"
@@ -23,28 +23,37 @@ limitations under the License.
 namespace FPGA {
 
 const IR::Node*  DeparserGraphCloser::preorder(IR::P4Control* ctrl){
-    std::cout << "closing graph " << std::endl;
+    LOG1("closing graph ");
     return ctrl;
 }
 const IR::Node* DeparserGraphCloser::postorder(IR::P4Control* ctrl){
-    std::cout << "closing graph postorder" << std::endl;
+    LOG1("closing graph postorder");
     convertBody(&ctrl->body->components);
     return nullptr;
 }
 const IR::Node* DeparserGraphCloser::preorder(IR::IfStatement* cond){
     // TODO
-    P4C_UNIMPLEMENTED("if statement in deparser");
+    // P4C_UNIMPLEMENTED("if statement in deparser");
+    LOG1("preorder if statement " << cond);
     return cond;
 }
+
+const IR::Node* DeparserGraphCloser::postorder(IR::IfStatement* cond){
+    // TODO
+    // P4C_UNIMPLEMENTED("if statement in deparser");
+    LOG1("postorder if statement " << cond);
+    return cond;
+}
+
 const IR::Node* DeparserGraphCloser::postorder(IR::MethodCallStatement* s){
     auto cond = new IR::Constant(1);
     const IR::EmptyStatement* fStatement = new IR::EmptyStatement();
-    std::cout<< "postOrder " << s->toString() << std::endl;
+    LOG1("postOrder " << s->toString());
     const IR::IfStatement* newNode = new IR::IfStatement(cond, s, fStatement);
     return newNode;
 }
 const IR::Node* DeparserGraphCloser::preorder(IR::StatOrDecl* s){
-    std::cout << "in state or decl" << std::endl;
+    LOG1("in state or decl");
     if (s->is<IR::MethodCallStatement>()){
         auto mc = s->to<IR::MethodCallStatement>()->methodCall;
     }else if (s->is<IR::IfStatement>()) {

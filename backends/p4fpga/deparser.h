@@ -50,10 +50,10 @@ class DeparserConverter : public Inspector {
         void insertTransition();  // links each previous state with each current states
 
  public:
-        bool preorder(const IR::P4Control* ctrl);
-        bool preorder(const IR::IfStatement* cond);
-        bool preorder(const IR::MethodCallStatement* s);
-        void postorder(const IR::P4Control* ctrl);
+        bool preorder(const IR::P4Control* ctrl) override;
+        bool preorder(const IR::IfStatement* cond) override;
+        bool preorder(const IR::MethodCallStatement* s) override;
+        void postorder(const IR::P4Control* ctrl) override;
 
         explicit DeparserConverter(FPGA::FPGAJson* json, P4::ReferenceMap* refMap,
                                 P4::TypeMap* typeMap, cstring name = "deparser")

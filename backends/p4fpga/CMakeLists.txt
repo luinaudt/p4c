@@ -21,7 +21,7 @@ set (P4FPGA_SRCS
   p4fpga.cpp
   JsonObjects.cpp
   main.cpp
-  depGraphCloser.cpp
+  deparserGraphCloser.cpp
   deparser.cpp
   packetExternTranslate.cpp
   midend.cpp
@@ -31,7 +31,7 @@ set (P4FPGA_HDRS
   p4fpga.h
   staticEval.h
   packetExternTranslate.h
-  depGraphCloser.h
+  deparserGraphCloser.h
   options.h
   midend.h
   deparser.h

@@ -55,25 +55,26 @@ class DoStaticEvaluation : public Inspector{
                     visitDagOnce = false;
                     factory = new P4::SymbolicValueFactory(typeMap);
                     setName("DoStaticEvaluation");}
-    bool preorder(const IR::ToplevelBlock *tlb);
-    bool preorder(const IR::P4Parser *block);
-    bool preorder(const IR::SelectExpression *s);
-    bool preorder(const IR::SelectCase *s);
-    bool preorder(const IR::Path *path);
-    bool preorder(const IR::P4Control *block);
-    bool preorder(const IR::MethodCallStatement *stat);
-    bool preorder(const IR::MethodCallExpression *expr);
-    bool preorder(const IR::ParserState *state);
+    bool preorder(const IR::ToplevelBlock *tlb) override;
+    bool preorder(const IR::P4Parser *block) override;
+    bool preorder(const IR::SelectExpression *s) override;
+    bool preorder(const IR::SelectCase *s) override;
+    bool preorder(const IR::Path *path) override;
+    bool preorder(const IR::P4Control *block) override;
+    bool preorder(const IR::MethodCallStatement *stat) override;
+    bool preorder(const IR::MethodCallExpression *expr) override;
+    bool preorder(const IR::ParserState *state) override;
+    bool preorder(const IR::IfStatement *stat) override;
 
     // postorder
-    void postorder(const IR::SelectCase *s);
-    void postorder(const IR::P4Control *block){
+    void postorder(const IR::SelectCase *s) override;
+    void postorder(const IR::P4Control *block) override {
         LOG1_UNINDENT;
     };
-    void postorder(const IR::ParserState *s){
+    void postorder(const IR::ParserState *s) override {
         LOG1_UNINDENT;
     };
-    void postorder(const IR::SelectExpression *s);
+    void postorder(const IR::SelectExpression *s) override;
 };
 class StaticEvaluation : public PassManager{
  public:

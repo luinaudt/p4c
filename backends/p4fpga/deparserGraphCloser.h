@@ -31,11 +31,12 @@ class DeparserGraphCloser : public Transform{
     const IR::Node* convertBody(const IR::Vector<IR::StatOrDecl>* body);
 
  public:
-    const IR::Node* preorder(IR::P4Control* ctrl);
-    const IR::Node* postorder(IR::MethodCallStatement* s);
-    const IR::Node* postorder(IR::P4Control* ctrl);
-    const IR::Node* preorder(IR::IfStatement* cond);
-    const IR::Node* preorder(IR::StatOrDecl* s);
+    const IR::Node* preorder(IR::P4Control* ctrl) override;
+    const IR::Node* postorder(IR::MethodCallStatement* s) override;
+    const IR::Node* postorder(IR::P4Control* ctrl) override;
+    const IR::Node* preorder(IR::IfStatement* cond) override;
+    const IR::Node* preorder(IR::StatOrDecl* s) override;
+    const IR::Node* postorder(IR::IfStatement* cond) override;
     explicit DeparserGraphCloser(P4::ReferenceMap* refMap, P4::TypeMap* typeMap)
     :  corelib(P4::P4CoreLibrary::instance), refMap(refMap), typeMap(typeMap){
             CHECK_NULL(refMap);
