@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 #include "lib/log.h"
-#include "backends/p4fpga/depGraphCloser.h"
+#include "backends/p4fpga/deparserGraphCloser.h"
 #include "ir/ir-generated.h"
 #include "ir/node.h"
 #include "lib/exceptions.h"

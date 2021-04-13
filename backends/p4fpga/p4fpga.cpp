@@ -18,7 +18,7 @@ limitations under the License.
 #include "common/options.h"
 #include "ir/ir-generated.h"
 #include "backends/p4fpga/deparser.h"
-#include "backends/p4fpga/depGraphCloser.h"
+#include "backends/p4fpga/deparserGraphCloser.h"
 
 namespace FPGA{
 FPGABackend::FPGABackend(FPGA::P4FpgaOptions& options,
