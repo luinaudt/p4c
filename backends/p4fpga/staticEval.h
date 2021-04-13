@@ -64,7 +64,7 @@ class DoStaticEvaluation : public Inspector{
     bool preorder(const IR::MethodCallStatement *stat) override;
     bool preorder(const IR::MethodCallExpression *expr) override;
     bool preorder(const IR::ParserState *state) override;
-    bool preorder(const IR::IfStatement *stat) override;
+    bool preorder(const IR::IfStatement *stat) override {return true;};
 
     // postorder
     void postorder(const IR::SelectCase *s) override;
