@@ -32,8 +32,8 @@ FPGABackend::FPGABackend(FPGA::P4FpgaOptions& options,
         auto main = tlb->getMain();
         auto deparser = main->findParameterValue("dep");
         if (!main) return;
-        auto depReduce = new DeparserGraphCloser(refMap, typeMap);
-        deparser->to<IR::ControlBlock>()->container->apply(*depReduce);
+        // auto depReduce = new DeparserGraphCloser(refMap, typeMap);
+        // deparser->to<IR::ControlBlock>()->container->apply(*depReduce);
         auto depConv = new DeparserConverter(json, refMap, typeMap);
         deparser->to<IR::ControlBlock>()->container->apply(*depConv);
     }

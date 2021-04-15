@@ -17,6 +17,7 @@ limitations under the License.
 #ifndef BACKENDS_P4FPGA_MIDEND_H_
 #define BACKENDS_P4FPGA_MIDEND_H_
 
+#include <vector>
 #include "frontends/common/resolveReferences/referenceMap.h"
 #include "ir/ir.h"
 #include "midend/expandEmit.h"
@@ -25,6 +26,7 @@ limitations under the License.
 #include "midend/convertEnums.h"
 #include "backends/p4fpga/packetExternTranslate.h"
 #include "backends/p4fpga/staticEval.h"
+#include "midend/interpreter.h"
 
 namespace FPGA {
 /**
@@ -60,7 +62,7 @@ class MidEnd : public PassManager {
     P4::ReferenceMap    refMap;
     P4::TypeMap         typeMap;
     P4::ConvertEnums::EnumMapping enumMap;
-
+    std::vector<P4::ValueMap*> hdr_status;  // status of all possible hdrs
     const IR::ToplevelBlock   *toplevel = nullptr;
 
     explicit MidEnd(CompilerOptions& options);

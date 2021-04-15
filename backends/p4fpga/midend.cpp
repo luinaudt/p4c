@@ -33,10 +33,12 @@ limitations under the License.
 #include "p4/moveDeclarations.h"
 #include "p4/simplify.h"
 #include "p4/typeMap.h"
+#include "backends/p4fpga/deparserGraphCloser.h"
 
 namespace FPGA {
 MidEnd::MidEnd(CompilerOptions& options){
     // temporary
+    hdr_status = std::vector<P4::ValueMap*>();
     auto convertEnums = new P4::ConvertEnums(&refMap, &typeMap,
                                             new EnumOn32Bits("v1model.p4"));
     auto evaluator = new P4::EvaluatorPass(&refMap, &typeMap);
@@ -56,7 +58,8 @@ MidEnd::MidEnd(CompilerOptions& options){
         new P4::LocalCopyPropagation(&refMap, &typeMap),
         new P4::ConstantFolding(&refMap, &typeMap),
         new P4::SimplifyControlFlow(&refMap, &typeMap),
-        new StaticEvaluation(&refMap, &typeMap),
+        new StaticEvaluation(&refMap, &typeMap, &hdr_status),
+        new DeparserGraphCloser(&refMap, &typeMap, &hdr_status),
         evaluator,
         new VisitFunctor([this, evaluator](){  // set toplevel
                             toplevel = evaluator->getToplevelBlock(); }),

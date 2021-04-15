@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+#include "lib/indent.h"
 #include "lib/log.h"
 #include "backends/p4fpga/deparserGraphCloser.h"
 #include "ir/ir-generated.h"
@@ -22,38 +23,41 @@ limitations under the License.
 
 namespace FPGA {
 
-const IR::Node*  DeparserGraphCloser::preorder(IR::P4Control* ctrl){
-    LOG1("closing graph ");
+const IR::Node* doDeparserGraphCloser::preorder(IR::P4Control* ctrl){
+    LOG1("closing graph " << IndentCtl::indent);
+    for (auto j : *hdr_vec){
+        for (auto i : j->map){
+            LOG1(i.first << " of " << i.second);
+        }
+    }
+    convertBody(&ctrl->body->components);
+    LOG1_UNINDENT;
+    prune();
     return ctrl;
 }
-const IR::Node* DeparserGraphCloser::postorder(IR::P4Control* ctrl){
+const IR::Node* doDeparserGraphCloser::postorder(IR::P4Control* ctrl){
+    LOG1_UNINDENT;
     LOG1("closing graph postorder");
-    convertBody(&ctrl->body->components);
     return nullptr;
 }
-const IR::Node* DeparserGraphCloser::preorder(IR::IfStatement* cond){
+const IR::Node* doDeparserGraphCloser::preorder(IR::IfStatement* cond){
     // TODO
     // P4C_UNIMPLEMENTED("if statement in deparser");
-    LOG1("preorder if statement " << cond);
+    LOG1("preorder " << cond->static_type_name());
+    LOG1(cond);
     return cond;
 }
 
-const IR::Node* DeparserGraphCloser::postorder(IR::IfStatement* cond){
+const IR::Node* doDeparserGraphCloser::postorder(IR::IfStatement* cond){
     // TODO
     // P4C_UNIMPLEMENTED("if statement in deparser");
-    LOG1("postorder if statement " << cond);
+    LOG1("postorder " << cond->static_type_name());
+    LOG1(cond);
     return cond;
 }
 
-const IR::Node* DeparserGraphCloser::postorder(IR::MethodCallStatement* s){
-    auto cond = new IR::Constant(1);
-    const IR::EmptyStatement* fStatement = new IR::EmptyStatement();
-    LOG1("postOrder " << s->toString());
-    const IR::IfStatement* newNode = new IR::IfStatement(cond, s, fStatement);
-    return newNode;
-}
-const IR::Node* DeparserGraphCloser::preorder(IR::StatOrDecl* s){
-    LOG1("in state or decl");
+const IR::Node* doDeparserGraphCloser::preorder(IR::StatOrDecl* s){
+    LOG1("in state or decl" << s);
     if (s->is<IR::MethodCallStatement>()){
         auto mc = s->to<IR::MethodCallStatement>()->methodCall;
     }else if (s->is<IR::IfStatement>()) {
@@ -63,7 +67,7 @@ const IR::Node* DeparserGraphCloser::preorder(IR::StatOrDecl* s){
     return s;
 }
 
-const IR::Node* DeparserGraphCloser::convertBody(const IR::Vector<IR::StatOrDecl>* body){
+const IR::Node* doDeparserGraphCloser::convertBody(const IR::Vector<IR::StatOrDecl>* body){
     for (auto s : *body) {
         if (auto block = s->to<IR::BlockStatement>()) {
             convertBody(&block->components);
@@ -77,7 +81,7 @@ const IR::Node* DeparserGraphCloser::convertBody(const IR::Vector<IR::StatOrDecl
             visit(statement);
         }
     }
-    return nullptr;
+    return body;
 }
 
 }  // namespace FPGA

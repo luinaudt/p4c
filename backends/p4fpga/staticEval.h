@@ -36,9 +36,9 @@ class DoStaticEvaluation : public Inspector{
     P4::ReferenceMap *refMap;
     P4::ValueMap* hdr;
     std::stack<P4::ValueMap*> hdr_stack;
-    std::vector<P4::ValueMap*> *hdr_vec;
     const P4::SymbolicValueFactory* factory;
     P4::ExpressionEvaluator* evaluator;
+    std::vector<P4::ValueMap*> *hdr_vec;
 
     /**
     insert val into hdr_vec, check if there is no duplicate
@@ -50,8 +50,9 @@ class DoStaticEvaluation : public Inspector{
     Inspector class for static evaluation of P4 program
     This class goes through header according to execution order
     */
-    explicit DoStaticEvaluation(P4::ReferenceMap *refMap, P4::TypeMap *typeMap) :
-            typeMap(typeMap), refMap(refMap) {
+    explicit DoStaticEvaluation(P4::ReferenceMap *refMap, P4::TypeMap *typeMap,
+                                std::vector<P4::ValueMap*> *hdr_vec) :
+            typeMap(typeMap), refMap(refMap), hdr_vec(hdr_vec) {
                     visitDagOnce = false;
                     factory = new P4::SymbolicValueFactory(typeMap);
                     setName("DoStaticEvaluation");}
@@ -78,10 +79,11 @@ class DoStaticEvaluation : public Inspector{
 };
 class StaticEvaluation : public PassManager{
  public:
-    explicit StaticEvaluation(P4::ReferenceMap *refMap, P4::TypeMap *typeMap)
+    explicit StaticEvaluation(P4::ReferenceMap *refMap, P4::TypeMap *typeMap,
+                              std::vector<P4::ValueMap *> *hdr_vec)
             {
                 auto evaluator = new P4::EvaluatorPass(refMap, typeMap);
-                auto evaluation = new DoStaticEvaluation(refMap, typeMap);
+                auto evaluation = new DoStaticEvaluation(refMap, typeMap, hdr_vec);
                 passes.push_back(new P4::TypeChecking(refMap, typeMap));
                 passes.push_back(evaluator);  // we visit from toplevel
                 passes.push_back(new VisitFunctor([evaluator, evaluation](){
