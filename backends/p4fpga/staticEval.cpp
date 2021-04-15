@@ -32,7 +32,6 @@ namespace FPGA {
 
 bool DoStaticEvaluation::preorder(const IR::ToplevelBlock *tlb) {
     LOG1("visiting program according to execution order");
-    //hdr_vec = new std::vector<P4::ValueMap*>();
     hdr = new P4::ValueMap();
     auto main = tlb->getMain();
     auto param = main->getConstructorParameters();
