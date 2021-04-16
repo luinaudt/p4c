@@ -77,6 +77,7 @@ class DoStaticEvaluation : public Inspector{
     };
     void postorder(const IR::SelectExpression *s) override;
 };
+
 class StaticEvaluation : public PassManager{
  public:
     explicit StaticEvaluation(P4::ReferenceMap *refMap, P4::TypeMap *typeMap,
