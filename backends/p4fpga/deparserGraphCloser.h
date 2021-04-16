@@ -32,6 +32,8 @@ class doDeparserGraphCloser : public Transform{
     P4::P4CoreLibrary&     corelib;
     P4::ReferenceMap* refMap;
     P4::TypeMap* typeMap;
+    P4::ExpressionEvaluator* evaluator;
+    const P4::SymbolicValueFactory* factory;
     std::vector<P4::ValueMap*> *hdr_vec;
  protected:
     const IR::Node* convertBody(const IR::Vector<IR::StatOrDecl>* body);
@@ -50,6 +52,7 @@ class doDeparserGraphCloser : public Transform{
             CHECK_NULL(refMap);
             CHECK_NULL(typeMap);
             CHECK_NULL(hdr_status);
+            factory = new P4::SymbolicValueFactory(typeMap);
             setName("CloseDeparserGraph");
         }
 };
