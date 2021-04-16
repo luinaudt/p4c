@@ -31,18 +31,15 @@ const IR::Node* doDeparserGraphCloser::preorder(IR::P4Program* prog) {
     auto main = mainDecls->at(0)->to<IR::Declaration_Instance>();
     auto deparser = main->arguments->at(main->arguments->size()-1);  // Deparser is last 
     auto depType = deparser->expression->type->getP4Type();
-    LOG1(depType);
     int pos = 0;
     for (auto i : prog->objects) {
         if (i->is<IR::P4Control>()){
             auto block = i->to<IR::P4Control>();
+            // we only visit deparsers.
             if (block->type->getP4Type()->equiv(*depType->getNode())) {
                 LOG1(block);
-                auto newDep = block->clone();
-                auto newDepBodyComp = new IR::IndexedVector<IR::StatOrDecl>();
-                auto newDepBody= new IR::BlockStatement(*newDepBodyComp);
-                newDep->body=newDepBody;
-                prog->objects.at(pos) = newDep;
+                visit(block);
+                prog->objects.at(pos) = block;
             }
         }
         pos++;
@@ -66,21 +63,17 @@ const IR::Node* doDeparserGraphCloser::preorder(IR::P4Control* ctrl){
         newHdr_vec->push_back(newMap->clone());
     }
     hdr_vec = newHdr_vec;  // assign update list
-    auto newCtrl = ctrl->clone();
-    // auto newBody = convertBody(&ctrl->body->components);
-    // newCtrl->body = newBody;
-    // prune();
     return ctrl;
 }
 const IR::Node* doDeparserGraphCloser::postorder(IR::P4Control* ctrl){
     LOG1_UNINDENT;
     LOG1("closing graph postorder");
-    return nullptr;
+    return ctrl;
 }
 
 const IR::Node* doDeparserGraphCloser::preorder(IR::BlockStatement* block){
     LOG1("in blockStatement " << block);
-    return new IR::BlockStatement(block->srcInfo);
+    return block;
 }
 const IR::Node* doDeparserGraphCloser::preorder(IR::IfStatement* cond){
     // TODO
@@ -109,13 +102,14 @@ const IR::Node* doDeparserGraphCloser::preorder(IR::IfStatement* cond){
         // auto stats = new IR::IndexedVector<IR::StatOrDecl>();
         if (val.value){
             LOG1("returning : " << cond->ifTrue);
+            return cond->ifTrue;
         } else {
             LOG1("returning : " << cond->ifFalse);
+            return cond->ifFalse;
         }
-        return nullptr;
     }
     LOG1("returning : " << cond);
-    return nullptr;
+    return cond;
 }
 
 const IR::Node* doDeparserGraphCloser::postorder(IR::IfStatement* cond){
@@ -123,7 +117,7 @@ const IR::Node* doDeparserGraphCloser::postorder(IR::IfStatement* cond){
     // P4C_UNIMPLEMENTED("if statement in deparser");
     LOG1("postorder " << cond->static_type_name());
     LOG1(cond);
-    return nullptr;
+    return cond;
 }
 
 const IR::Node* doDeparserGraphCloser::preorder(IR::StatOrDecl* s){
@@ -134,7 +128,7 @@ const IR::Node* doDeparserGraphCloser::preorder(IR::StatOrDecl* s){
         auto cond = s->to<IR::IfStatement>();
         visit(cond);
     }
-    return nullptr;
+    return s;
 }
 
 const IR::BlockStatement* doDeparserGraphCloser::convertBody(const IR::Vector<IR::StatOrDecl>* body){
