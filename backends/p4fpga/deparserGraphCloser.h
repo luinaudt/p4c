@@ -36,13 +36,15 @@ class doDeparserGraphCloser : public Transform{
     const P4::SymbolicValueFactory* factory;
     std::vector<P4::ValueMap*> *hdr_vec;
  protected:
-    const IR::Node* convertBody(const IR::Vector<IR::StatOrDecl>* body);
+    const IR::BlockStatement* convertBody(const IR::Vector<IR::StatOrDecl>* body);
 
  public:
+    const IR::Node* preorder(IR::P4Program* prog) override;
     const IR::Node* preorder(IR::P4Control* ctrl) override;
     const IR::Node* postorder(IR::P4Control* ctrl) override;
     const IR::Node* preorder(IR::IfStatement* cond) override;
     const IR::Node* preorder(IR::StatOrDecl* s) override;
+    const IR::Node* preorder(IR::BlockStatement* block) override;
     const IR::Node* postorder(IR::IfStatement* cond) override;
     explicit doDeparserGraphCloser(P4::ReferenceMap* refMap, P4::TypeMap* typeMap,
                                  std::vector<P4::ValueMap *> *hdr_status)
@@ -64,15 +66,15 @@ class DeparserGraphCloser : public PassManager{
                 auto evaluator = new P4::EvaluatorPass(refMap, typeMap);
                 auto depReduce = new doDeparserGraphCloser(refMap, typeMap, hdr_status);
                 passes.push_back(new P4::TypeChecking(refMap, typeMap));
-                passes.push_back(evaluator);  // we visit from toplevel
+               /* passes.push_back(evaluator);  // we visit from toplevel
                 passes.push_back(new VisitFunctor([evaluator, depReduce](){
                         auto main = evaluator->getToplevelBlock()->getMain();
-                        auto deparser = main->findParameterValue("dep");
+                        auto deparser = main->findParameterValue("dep")->to<IR::ControlBlock>();
                         if (!main) return;
-                        deparser->to<IR::ControlBlock>()->container->apply(*depReduce);
-                }));
-                // passes.push_back(new DoStaticEvaluation(typeMap));
-                setName("StaticEvaluation");
+                        deparser->container->apply(*depReduce);
+                }));*/
+                passes.push_back(depReduce);
+                setName("DeparserGraphCloser");
             }
 };
 }  // namespace FPGA

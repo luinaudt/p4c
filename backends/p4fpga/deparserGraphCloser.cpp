@@ -14,20 +14,45 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+#include <cstdlib>
 #include <vector>
-#include "ir/indexed_vector.h"
 #include "lib/indent.h"
 #include "lib/log.h"
 #include "backends/p4fpga/deparserGraphCloser.h"
-#include "ir/ir-generated.h"
-#include "ir/node.h"
 #include "lib/exceptions.h"
 #include "midend/interpreter.h"
 
 namespace FPGA {
 
-const IR::Node* doDeparserGraphCloser::preorder(IR::P4Control* ctrl){
+const IR::Node* doDeparserGraphCloser::preorder(IR::P4Program* prog) {
     LOG1("closing graph " << IndentCtl::indent);
+    // we extract the name of the deparser
+    auto mainDecls = prog->getDeclsByName(IR::P4Program::main)->toVector();
+    auto main = mainDecls->at(0)->to<IR::Declaration_Instance>();
+    auto deparser = main->arguments->at(main->arguments->size()-1);  // Deparser is last 
+    auto depType = deparser->expression->type->getP4Type();
+    LOG1(depType);
+    int pos = 0;
+    for (auto i : prog->objects) {
+        if (i->is<IR::P4Control>()){
+            auto block = i->to<IR::P4Control>();
+            if (block->type->getP4Type()->equiv(*depType->getNode())) {
+                LOG1(block);
+                auto newDep = block->clone();
+                auto newDepBodyComp = new IR::IndexedVector<IR::StatOrDecl>();
+                auto newDepBody= new IR::BlockStatement(*newDepBodyComp);
+                newDep->body=newDepBody;
+                prog->objects.at(pos) = newDep;
+            }
+        }
+        pos++;
+    }
+    prune();
+    LOG1_UNINDENT;
+    return prog;
+}
+
+const IR::Node* doDeparserGraphCloser::preorder(IR::P4Control* ctrl){
     auto newHdr_vec = new std::vector<P4::ValueMap*>();
     auto hdrIn = ctrl->getApplyParameters()->parameters.at(1);
     auto paramType = typeMap->getType(hdrIn);
@@ -41,15 +66,21 @@ const IR::Node* doDeparserGraphCloser::preorder(IR::P4Control* ctrl){
         newHdr_vec->push_back(newMap->clone());
     }
     hdr_vec = newHdr_vec;  // assign update list
-    convertBody(&ctrl->body->components);
-    LOG1_UNINDENT;
-    prune();
+    auto newCtrl = ctrl->clone();
+    // auto newBody = convertBody(&ctrl->body->components);
+    // newCtrl->body = newBody;
+    // prune();
     return ctrl;
 }
 const IR::Node* doDeparserGraphCloser::postorder(IR::P4Control* ctrl){
     LOG1_UNINDENT;
     LOG1("closing graph postorder");
     return nullptr;
+}
+
+const IR::Node* doDeparserGraphCloser::preorder(IR::BlockStatement* block){
+    LOG1("in blockStatement " << block);
+    return new IR::BlockStatement(block->srcInfo);
 }
 const IR::Node* doDeparserGraphCloser::preorder(IR::IfStatement* cond){
     // TODO
@@ -84,7 +115,7 @@ const IR::Node* doDeparserGraphCloser::preorder(IR::IfStatement* cond){
         return nullptr;
     }
     LOG1("returning : " << cond);
-    return cond;
+    return nullptr;
 }
 
 const IR::Node* doDeparserGraphCloser::postorder(IR::IfStatement* cond){
@@ -92,7 +123,7 @@ const IR::Node* doDeparserGraphCloser::postorder(IR::IfStatement* cond){
     // P4C_UNIMPLEMENTED("if statement in deparser");
     LOG1("postorder " << cond->static_type_name());
     LOG1(cond);
-    return cond;
+    return nullptr;
 }
 
 const IR::Node* doDeparserGraphCloser::preorder(IR::StatOrDecl* s){
@@ -103,10 +134,10 @@ const IR::Node* doDeparserGraphCloser::preorder(IR::StatOrDecl* s){
         auto cond = s->to<IR::IfStatement>();
         visit(cond);
     }
-    return s;
+    return nullptr;
 }
 
-const IR::Node* doDeparserGraphCloser::convertBody(const IR::Vector<IR::StatOrDecl>* body){
+const IR::BlockStatement* doDeparserGraphCloser::convertBody(const IR::Vector<IR::StatOrDecl>* body){
     for (auto s : *body) {
         if (auto block = s->to<IR::BlockStatement>()) {
             convertBody(&block->components);
@@ -120,7 +151,8 @@ const IR::Node* doDeparserGraphCloser::convertBody(const IR::Vector<IR::StatOrDe
             visit(statement);
         }
     }
-    return body;
+    auto newBody = new IR::BlockStatement();
+    return newBody;
 }
 
 }  // namespace FPGA
