@@ -34,6 +34,8 @@ limitations under the License.
 #include "p4/simplify.h"
 #include "p4/typeMap.h"
 #include "backends/p4fpga/deparserGraphCloser.h"
+#include "backends/p4fpga/reachabilitySimplifier.h"
+
 
 namespace FPGA {
 MidEnd::MidEnd(CompilerOptions& options){
@@ -59,7 +61,7 @@ MidEnd::MidEnd(CompilerOptions& options){
         new P4::ConstantFolding(&refMap, &typeMap),
         new P4::SimplifyControlFlow(&refMap, &typeMap),
         new StaticEvaluation(&refMap, &typeMap, &hdr_status),
-        new DeparserGraphCloser(&refMap, &typeMap, &hdr_status),
+        new ReachabilitySimplifier(&refMap, &typeMap, &hdr_status),
         new P4::ResolveReferences(&refMap),
         new P4::TypeChecking(&refMap, &typeMap),
         evaluator,

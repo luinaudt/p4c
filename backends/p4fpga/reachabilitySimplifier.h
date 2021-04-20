@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#ifndef BACKENDS_P4FPGA_DEPARSERGRAPHCLOSER_H_
-#define BACKENDS_P4FPGA_DEPARSERGRAPHCLOSER_H_
+#ifndef BACKENDS_P4FPGA_REACHABILITYSIMPLIFIER_H_
+#define BACKENDS_P4FPGA_REACHABILITYSIMPLIFIER_H_
 
 #include <vector>
 #include "ir/ir.h"
@@ -28,7 +28,7 @@ limitations under the License.
 
 
 namespace FPGA {
-class doDeparserGraphCloser : public Transform{
+class doReachabilitySimplifier : public Transform{
     P4::P4CoreLibrary&     corelib;
     P4::ReferenceMap* refMap;
     P4::TypeMap* typeMap;
@@ -46,7 +46,7 @@ class doDeparserGraphCloser : public Transform{
     const IR::Node* preorder(IR::StatOrDecl* s) override;
     const IR::Node* preorder(IR::BlockStatement* block) override;
     const IR::Node* postorder(IR::IfStatement* cond) override;
-    explicit doDeparserGraphCloser(P4::ReferenceMap* refMap, P4::TypeMap* typeMap,
+    explicit doReachabilitySimplifier(P4::ReferenceMap* refMap, P4::TypeMap* typeMap,
                                  std::vector<P4::ValueMap *> *hdr_status)
     :  corelib(P4::P4CoreLibrary::instance), refMap(refMap), typeMap(typeMap),
         hdr_vec(hdr_status){
@@ -55,28 +55,20 @@ class doDeparserGraphCloser : public Transform{
             CHECK_NULL(typeMap);
             CHECK_NULL(hdr_status);
             factory = new P4::SymbolicValueFactory(typeMap);
-            setName("doDeparserGraphCloser");
+            setName("doReachabilitySimplifier");
         }
 };
-class DeparserGraphCloser : public PassManager{
+class ReachabilitySimplifier : public PassManager{
  public:
-    explicit DeparserGraphCloser(P4::ReferenceMap* refMap, P4::TypeMap* typeMap,
+    explicit ReachabilitySimplifier(P4::ReferenceMap* refMap, P4::TypeMap* typeMap,
                                  std::vector<P4::ValueMap *> *hdr_status)
             {
-                auto evaluator = new P4::EvaluatorPass(refMap, typeMap);
-                auto depReduce = new doDeparserGraphCloser(refMap, typeMap, hdr_status);
+                auto depReduce = new doReachabilitySimplifier(refMap, typeMap, hdr_status);
                 passes.push_back(new P4::TypeChecking(refMap, typeMap));
-               /* passes.push_back(evaluator);  // we visit from toplevel
-                passes.push_back(new VisitFunctor([evaluator, depReduce](){
-                        auto main = evaluator->getToplevelBlock()->getMain();
-                        auto deparser = main->findParameterValue("dep")->to<IR::ControlBlock>();
-                        if (!main) return;
-                        deparser->container->apply(*depReduce);
-                }));*/
                 passes.push_back(depReduce);
-                setName("DeparserGraphCloser");
+                setName("reachabilitySimplifier");
             }
 };
 }  // namespace FPGA
 
-#endif  // BACKENDS_P4FPGA_DEPARSERGRAPHCLOSER_H_
+#endif  // BACKENDS_P4FPGA_REACHABILITYSIMPLIFIER_H_

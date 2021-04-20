@@ -22,6 +22,7 @@ set (P4FPGA_SRCS
   JsonObjects.cpp
   main.cpp
   deparserGraphCloser.cpp
+  reachabilitySimplifier.cpp
   deparser.cpp
   packetExternTranslate.cpp
   midend.cpp
@@ -30,6 +31,7 @@ set (P4FPGA_SRCS
 set (P4FPGA_HDRS
   p4fpga.h
   staticEval.h
+  reachabilitySimplifier.h
   packetExternTranslate.h
   deparserGraphCloser.h
   options.h
