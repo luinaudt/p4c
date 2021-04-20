@@ -32,47 +32,28 @@ class doDeparserGraphCloser : public Transform{
     P4::P4CoreLibrary&     corelib;
     P4::ReferenceMap* refMap;
     P4::TypeMap* typeMap;
-    P4::ExpressionEvaluator* evaluator;
-    const P4::SymbolicValueFactory* factory;
-    std::vector<P4::ValueMap*> *hdr_vec;
- protected:
-    const IR::BlockStatement* convertBody(const IR::Vector<IR::StatOrDecl>* body);
+    IR::IndexedVector<IR::StatOrDecl>* futures;
 
  public:
     const IR::Node* preorder(IR::P4Program* prog) override;
     const IR::Node* preorder(IR::P4Control* ctrl) override;
-    const IR::Node* postorder(IR::P4Control* ctrl) override;
     const IR::Node* preorder(IR::IfStatement* cond) override;
     const IR::Node* preorder(IR::StatOrDecl* s) override;
     const IR::Node* preorder(IR::BlockStatement* block) override;
     const IR::Node* postorder(IR::IfStatement* cond) override;
-    explicit doDeparserGraphCloser(P4::ReferenceMap* refMap, P4::TypeMap* typeMap,
-                                 std::vector<P4::ValueMap *> *hdr_status)
-    :  corelib(P4::P4CoreLibrary::instance), refMap(refMap), typeMap(typeMap),
-        hdr_vec(hdr_status){
-            visitDagOnce = false;
+    explicit doDeparserGraphCloser(P4::ReferenceMap* refMap, P4::TypeMap* typeMap)
+    :  corelib(P4::P4CoreLibrary::instance), refMap(refMap), typeMap(typeMap){
             CHECK_NULL(refMap);
             CHECK_NULL(typeMap);
-            CHECK_NULL(hdr_status);
-            factory = new P4::SymbolicValueFactory(typeMap);
             setName("doDeparserGraphCloser");
         }
 };
 class DeparserGraphCloser : public PassManager{
  public:
-    explicit DeparserGraphCloser(P4::ReferenceMap* refMap, P4::TypeMap* typeMap,
-                                 std::vector<P4::ValueMap *> *hdr_status)
+    explicit DeparserGraphCloser(P4::ReferenceMap* refMap, P4::TypeMap* typeMap)
             {
-                auto evaluator = new P4::EvaluatorPass(refMap, typeMap);
-                auto depReduce = new doDeparserGraphCloser(refMap, typeMap, hdr_status);
+                auto depReduce = new doDeparserGraphCloser(refMap, typeMap);
                 passes.push_back(new P4::TypeChecking(refMap, typeMap));
-               /* passes.push_back(evaluator);  // we visit from toplevel
-                passes.push_back(new VisitFunctor([evaluator, depReduce](){
-                        auto main = evaluator->getToplevelBlock()->getMain();
-                        auto deparser = main->findParameterValue("dep")->to<IR::ControlBlock>();
-                        if (!main) return;
-                        deparser->container->apply(*depReduce);
-                }));*/
                 passes.push_back(depReduce);
                 setName("DeparserGraphCloser");
             }

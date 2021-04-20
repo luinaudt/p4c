@@ -60,6 +60,7 @@ MidEnd::MidEnd(CompilerOptions& options){
         new P4::LocalCopyPropagation(&refMap, &typeMap),
         new P4::ConstantFolding(&refMap, &typeMap),
         new P4::SimplifyControlFlow(&refMap, &typeMap),
+        new DeparserGraphCloser(&refMap, &typeMap),
         new StaticEvaluation(&refMap, &typeMap, &hdr_status),
         new ReachabilitySimplifier(&refMap, &typeMap, &hdr_status),
         new P4::ResolveReferences(&refMap),

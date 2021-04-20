@@ -29,7 +29,8 @@ const IR::Node* doDeparserGraphCloser::preorder(IR::P4Program* prog) {
     // we extract the name of the deparser
     auto mainDecls = prog->getDeclsByName(IR::P4Program::main)->toVector();
     auto main = mainDecls->at(0)->to<IR::Declaration_Instance>();
-    auto deparser = main->arguments->at(main->arguments->size()-1);  // Deparser is last 
+    // Deparser is last
+    auto deparser = main->arguments->at(main->arguments->size()-1);
     auto depType = deparser->expression->type->getP4Type();
     int pos = 0;
     for (auto i : prog->objects) {
@@ -50,66 +51,44 @@ const IR::Node* doDeparserGraphCloser::preorder(IR::P4Program* prog) {
 }
 
 const IR::Node* doDeparserGraphCloser::preorder(IR::P4Control* ctrl){
-    auto newHdr_vec = new std::vector<P4::ValueMap*>();
-    auto hdrIn = ctrl->getApplyParameters()->parameters.at(1);
-    auto paramType = typeMap->getType(hdrIn);
-    if (!paramType->is<IR::Type_Struct>()){
-        ::error(ErrorType::ERR_UNEXPECTED,
-                "%1%: param is not a struct", paramType);}
-    // update values Map with correct references
-    auto newMap = new P4::ValueMap();
-    for (auto hdr : *hdr_vec){
-        newMap->set(hdrIn, hdr->map.begin()->second);
-        newHdr_vec->push_back(newMap->clone());
-    }
-    hdr_vec = newHdr_vec;  // assign update list
-    return ctrl;
-}
-const IR::Node* doDeparserGraphCloser::postorder(IR::P4Control* ctrl){
-    LOG1_UNINDENT;
-    LOG1("closing graph postorder");
+    LOG1("in control " << ctrl);
+    futures = new IR::IndexedVector<IR::StatOrDecl>();
+    visit(ctrl->body);
+    prune();
     return ctrl;
 }
 
 const IR::Node* doDeparserGraphCloser::preorder(IR::BlockStatement* block){
     LOG1("in blockStatement " << block);
-    return block;
+    for (auto inst =  block->components.rbegin();
+         inst != block->components.rend(); inst++){
+        visit(*inst);
+    }
+    prune();
+    return new IR::BlockStatement(block->srcInfo, *futures);
 }
 const IR::Node* doDeparserGraphCloser::preorder(IR::IfStatement* cond){
     // TODO
-    // P4C_UNIMPLEMENTED("if statement in deparser");
     LOG1("preorder " << cond->static_type_name());
-    LOG1(cond);
-    LOG2("evaluate " << cond->condition);
-    auto val = P4::SymbolicBool();
-    for (auto hdr : *hdr_vec) {
-        LOG3(" with " << hdr);
-        evaluator = new P4::ExpressionEvaluator(refMap, typeMap, hdr);
-        auto res = evaluator->evaluate(cond->condition , false);
-        BUG_CHECK(res->is<P4::SymbolicBool>(), "%1% condition error", cond->condition);
-        auto condRes = res->to<P4::SymbolicBool>();
-        if (val.isUninitialized()){
-            val.value = condRes->value;
-            val.state=P4::ScalarValue::ValueState::Constant;
-        } else if (val.value!=condRes->value) {
-            val.state=P4::ScalarValue::ValueState::NotConstant;
-            break;
-        }
+    LOG2(cond);
+    auto oldFutures = futures->clone();
+    auto newCond = cond->clone();
+    // ifTrue transformation
+    visit(cond->ifTrue);
+    if (futures->size() != 0){
+        newCond->ifTrue = new IR::BlockStatement(*futures);
     }
-    // constant value
-    if (val.isKnown()){
-        LOG1("valKnown ");
-        // auto stats = new IR::IndexedVector<IR::StatOrDecl>();
-        if (val.value){
-            LOG1("returning : " << cond->ifTrue);
-            return cond->ifTrue;
-        } else {
-            LOG1("returning : " << cond->ifFalse);
-            return cond->ifFalse;
-        }
+    // ifFalse transformation
+    futures = oldFutures->clone();
+    visit(cond->ifFalse);
+    if (futures->size() != 0){
+        newCond->ifFalse = new IR::BlockStatement(*futures);
     }
-    LOG1("returning : " << cond);
-    return cond;
+    // update futures with condition
+    futures = new IR::IndexedVector<IR::StatOrDecl>();
+    futures->insert(futures->begin(), newCond->clone());
+    prune();
+    return newCond;
 }
 
 const IR::Node* doDeparserGraphCloser::postorder(IR::IfStatement* cond){
@@ -122,31 +101,8 @@ const IR::Node* doDeparserGraphCloser::postorder(IR::IfStatement* cond){
 
 const IR::Node* doDeparserGraphCloser::preorder(IR::StatOrDecl* s){
     LOG1("in state or decl" << s);
-    if (s->is<IR::MethodCallStatement>()){
-        auto mc = s->to<IR::MethodCallStatement>()->methodCall;
-    }else if (s->is<IR::IfStatement>()) {
-        auto cond = s->to<IR::IfStatement>();
-        visit(cond);
-    }
+    futures->insert(futures->begin(), s->clone());
     return s;
-}
-
-const IR::BlockStatement* doDeparserGraphCloser::convertBody(const IR::Vector<IR::StatOrDecl>* body){
-    for (auto s : *body) {
-        if (auto block = s->to<IR::BlockStatement>()) {
-            convertBody(&block->components);
-            continue;
-        }
-        if (s->is<IR::IfStatement>()){
-            auto cond = s->to<IR::IfStatement>();
-            visit(cond);
-        }else if (s->is<IR::StatOrDecl>()){
-            auto statement = s->to<IR::StatOrDecl>();
-            visit(statement);
-        }
-    }
-    auto newBody = new IR::BlockStatement();
-    return newBody;
 }
 
 }  // namespace FPGA

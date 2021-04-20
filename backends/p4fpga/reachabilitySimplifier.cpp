@@ -25,7 +25,7 @@ limitations under the License.
 namespace FPGA {
 
 const IR::Node* doReachabilitySimplifier::preorder(IR::P4Program* prog) {
-    LOG1("closing graph " << IndentCtl::indent);
+    LOG1("Simplifying graph " << IndentCtl::indent);
     // we extract the name of the deparser
     auto mainDecls = prog->getDeclsByName(IR::P4Program::main)->toVector();
     auto main = mainDecls->at(0)->to<IR::Declaration_Instance>();
@@ -68,7 +68,7 @@ const IR::Node* doReachabilitySimplifier::preorder(IR::P4Control* ctrl){
 }
 const IR::Node* doReachabilitySimplifier::postorder(IR::P4Control* ctrl){
     LOG1_UNINDENT;
-    LOG1("closing graph postorder");
+    LOG1("reducing graph postorder");
     return ctrl;
 }
 
