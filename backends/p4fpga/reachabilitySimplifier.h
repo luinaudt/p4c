@@ -41,16 +41,11 @@ class doReachabilitySimplifier : public Transform{
  public:
     const IR::Node* preorder(IR::P4Program* prog) override;
     const IR::Node* preorder(IR::P4Control* ctrl) override;
-    const IR::Node* postorder(IR::P4Control* ctrl) override;
     const IR::Node* preorder(IR::IfStatement* cond) override;
-    const IR::Node* preorder(IR::StatOrDecl* s) override;
-    const IR::Node* preorder(IR::BlockStatement* block) override;
-    const IR::Node* postorder(IR::IfStatement* cond) override;
     explicit doReachabilitySimplifier(P4::ReferenceMap* refMap, P4::TypeMap* typeMap,
                                  std::vector<P4::ValueMap *> *hdr_status)
     :  corelib(P4::P4CoreLibrary::instance), refMap(refMap), typeMap(typeMap),
         hdr_vec(hdr_status){
-            visitDagOnce = false;
             CHECK_NULL(refMap);
             CHECK_NULL(typeMap);
             CHECK_NULL(hdr_status);

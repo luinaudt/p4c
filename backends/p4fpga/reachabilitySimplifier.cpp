@@ -66,16 +66,7 @@ const IR::Node* doReachabilitySimplifier::preorder(IR::P4Control* ctrl){
     hdr_vec = newHdr_vec;  // assign update list
     return ctrl;
 }
-const IR::Node* doReachabilitySimplifier::postorder(IR::P4Control* ctrl){
-    LOG1_UNINDENT;
-    LOG1("reducing graph postorder");
-    return ctrl;
-}
 
-const IR::Node* doReachabilitySimplifier::preorder(IR::BlockStatement* block){
-    LOG1("in blockStatement " << block);
-    return block;
-}
 const IR::Node* doReachabilitySimplifier::preorder(IR::IfStatement* cond){
     // TODO
     // P4C_UNIMPLEMENTED("if statement in deparser");
@@ -83,20 +74,36 @@ const IR::Node* doReachabilitySimplifier::preorder(IR::IfStatement* cond){
     LOG1(cond);
     LOG2("evaluate " << cond->condition);
     auto val = P4::SymbolicBool();
+    auto hdr_val_true = new std::vector<P4::ValueMap*> ();
+    auto hdr_val_false = new std::vector<P4::ValueMap*> ();
+    // evaluate for all possible condition value
     for (auto hdr : *hdr_vec) {
         LOG3(" with " << hdr);
         evaluator = new P4::ExpressionEvaluator(refMap, typeMap, hdr);
         auto res = evaluator->evaluate(cond->condition , false);
         BUG_CHECK(res->is<P4::SymbolicBool>(), "%1% condition error", cond->condition);
         auto condRes = res->to<P4::SymbolicBool>();
+        if (condRes->value){
+            hdr_val_true->push_back(hdr);
+        } else{
+            hdr_val_false->push_back(hdr);
+        }
         if (val.isUninitialized()){
             val.value = condRes->value;
             val.state=P4::ScalarValue::ValueState::Constant;
         } else if (val.value!=condRes->value) {
             val.state=P4::ScalarValue::ValueState::NotConstant;
-            break;
         }
     }
+    // visit condition inside with assign possible header validity
+    auto old_hdr_vec = hdr_vec;
+    hdr_vec = hdr_val_true;
+    visit(cond->ifTrue);
+    hdr_vec = hdr_val_false;
+    visit(cond->ifFalse);
+    hdr_vec = old_hdr_vec;
+
+    // set condition modification (code simplification)
     // constant value
     if (val.isKnown()){
         LOG1("valKnown ");
@@ -110,26 +117,8 @@ const IR::Node* doReachabilitySimplifier::preorder(IR::IfStatement* cond){
         }
     }
     LOG1("returning : " << cond);
+    prune();
     return cond;
-}
-
-const IR::Node* doReachabilitySimplifier::postorder(IR::IfStatement* cond){
-    // TODO
-    // P4C_UNIMPLEMENTED("if statement in deparser");
-    LOG1("postorder " << cond->static_type_name());
-    LOG1(cond);
-    return cond;
-}
-
-const IR::Node* doReachabilitySimplifier::preorder(IR::StatOrDecl* s){
-    LOG1("in state or decl" << s);
-    if (s->is<IR::MethodCallStatement>()){
-        auto mc = s->to<IR::MethodCallStatement>()->methodCall;
-    }else if (s->is<IR::IfStatement>()) {
-        auto cond = s->to<IR::IfStatement>();
-        visit(cond);
-    }
-    return s;
 }
 
 const IR::BlockStatement* doReachabilitySimplifier::convertBody(const IR::Vector<IR::StatOrDecl>* body){
