@@ -16,6 +16,7 @@ limitations under the License.
 
 #include "backends/p4fpga/midend.h"
 #include "common/constantFolding.h"
+#include "common/resolveReferences/resolveReferences.h"
 #include "ir/ir.h"
 #include "ir/pass_manager.h"
 #include "frontends/p4/evaluator/evaluator.h"
@@ -60,11 +61,11 @@ MidEnd::MidEnd(CompilerOptions& options){
         new P4::LocalCopyPropagation(&refMap, &typeMap),
         new P4::ConstantFolding(&refMap, &typeMap),
         new P4::SimplifyControlFlow(&refMap, &typeMap),
-        new DeparserGraphCloser(&refMap, &typeMap),
         new StaticEvaluation(&refMap, &typeMap, &hdr_status),
+        //new ReachabilitySimplifier(&refMap, &typeMap, &hdr_status),
+        new DeparserGraphCloser(&refMap, &typeMap),
         new ReachabilitySimplifier(&refMap, &typeMap, &hdr_status),
         new P4::ResolveReferences(&refMap),
-        new P4::TypeChecking(&refMap, &typeMap),
         evaluator,
         new VisitFunctor([this, evaluator](){  // set toplevel
                             toplevel = evaluator->getToplevelBlock(); }),
