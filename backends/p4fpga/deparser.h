@@ -59,6 +59,7 @@ class DeparserConverter : public Inspector {
                                 P4::TypeMap* typeMap, cstring name = "deparser")
             : name(name), corelib(P4::P4CoreLibrary::instance), json(json),
             refMap(refMap), typeMap(typeMap) {
+            visitDagOnce = false;
             setName("DeparserConverter");
         }
 };

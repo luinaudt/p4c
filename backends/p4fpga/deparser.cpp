@@ -32,9 +32,7 @@ namespace FPGA {
 void DeparserConverter::insertTransition(){
     cstring label = "";
     if (condList->size() > 0){
-        for (auto c : *condList){
-            label += c + " ";
-        }
+        label = condList->at(condList->size() - 1);
     }
     if (previousState){
         LOG2("inserting links :" << IndentCtl::indent);
@@ -62,11 +60,12 @@ void DeparserConverter::insertState(cstring state){
 
 bool DeparserConverter::preorder(const IR::IfStatement* block){
     auto oriState = currentState;
+    LOG2("visiting " << block->condition);
     condList->push_back(block->condition->toString());
     visit(block->ifTrue);
+    condList->pop_back();
     if (block->ifFalse != nullptr){
-        condList->pop_back();
-        condList->push_back("!" + block->condition->toString());
+        // condList->push_back("!" + block->condition->toString());
         auto stateTrue = currentState;  // save state in True
         currentState = oriState;
         visit(block->ifFalse);
@@ -79,13 +78,14 @@ bool DeparserConverter::preorder(const IR::IfStatement* block){
     for (auto cs : *oriState){
         currentState->insert(cs);
     }
-    condList->pop_back();
-    return true;
+    // condList->pop_back();
+    return false;
 }
 bool DeparserConverter::preorder(const IR::MethodCallStatement* s){
     // TODO add verification for extern type : emit statement
     auto mi = P4::MethodInstance::resolve(s->methodCall, refMap, typeMap);
     auto em = mi->to<P4::ExternMethod>();
+    LOG2("visiting " << s);
     if (em->originalExternType->name.name == P4::P4CoreLibrary::instance.packetOut.name &&
         em->method->name.name == P4::P4CoreLibrary::instance.packetOut.emit.name) {
         auto mc = s->methodCall;
