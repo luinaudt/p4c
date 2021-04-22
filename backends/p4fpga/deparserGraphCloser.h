@@ -38,9 +38,10 @@ class doDeparserGraphCloser : public Transform{
     const IR::Node* preorder(IR::P4Program* prog) override;
     const IR::Node* preorder(IR::P4Control* ctrl) override;
     const IR::Node* preorder(IR::IfStatement* cond) override;
-    const IR::Node* preorder(IR::StatOrDecl* s) override;
     const IR::Node* preorder(IR::BlockStatement* block) override;
-    const IR::Node* postorder(IR::IfStatement* cond) override;
+    const IR::Node* postorder(IR::StatOrDecl* s) override;
+    const IR::Node* preoder(IR::MethodCallStatement* s);
+    const IR::Node* preoder(IR::AssignmentStatement* s);
     explicit doDeparserGraphCloser(P4::ReferenceMap* refMap, P4::TypeMap* typeMap)
     :  corelib(P4::P4CoreLibrary::instance), refMap(refMap), typeMap(typeMap){
             CHECK_NULL(refMap);

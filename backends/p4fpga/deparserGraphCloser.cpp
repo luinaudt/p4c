@@ -47,6 +47,7 @@ const IR::Node* doDeparserGraphCloser::preorder(IR::P4Program* prog) {
     }
     prune();
     LOG1_UNINDENT;
+    LOG1("end programm process");
     return prog;
 }
 
@@ -55,6 +56,7 @@ const IR::Node* doDeparserGraphCloser::preorder(IR::P4Control* ctrl){
     futures = new IR::IndexedVector<IR::StatOrDecl>();
     visit(ctrl->body);
     prune();
+    LOG1("end control process");
     return ctrl;
 }
 
@@ -72,15 +74,15 @@ const IR::Node* doDeparserGraphCloser::preorder(IR::IfStatement* cond){
     LOG1("preorder " << cond->static_type_name());
     LOG2(cond);
     auto oldFutures = futures->clone();
-    auto newCond = cond->clone();
+    auto newCond = new IR::IfStatement(*cond);
     // ifTrue transformation
-    visit(cond->ifTrue);
+    visit(newCond->ifTrue);
     if (futures->size() != 0){
         newCond->ifTrue = new IR::BlockStatement(*futures);
     }
     // ifFalse transformation
-    futures = oldFutures->clone();
-    visit(cond->ifFalse);
+    futures = oldFutures;
+    visit(newCond->ifFalse);
     if (futures->size() != 0){
         newCond->ifFalse = new IR::BlockStatement(*futures);
     }
@@ -90,18 +92,16 @@ const IR::Node* doDeparserGraphCloser::preorder(IR::IfStatement* cond){
     prune();
     return newCond;
 }
-
-const IR::Node* doDeparserGraphCloser::postorder(IR::IfStatement* cond){
-    // TODO
-    // P4C_UNIMPLEMENTED("if statement in deparser");
-    LOG1("postorder " << cond->static_type_name());
-    LOG1(cond);
-    return cond;
+const IR::Node* doDeparserGraphCloser::preoder(IR::MethodCallStatement* s){
+    return new IR::MethodCallStatement(*s);
 }
-
-const IR::Node* doDeparserGraphCloser::preorder(IR::StatOrDecl* s){
+const IR::Node* doDeparserGraphCloser::preoder(IR::AssignmentStatement* s){
+    return new IR::AssignmentStatement(*s);
+}
+const IR::Node* doDeparserGraphCloser::postorder(IR::StatOrDecl* s){
     LOG1("in state or decl" << s);
     futures->insert(futures->begin(), s->clone());
+    prune();
     return s;
 }
 
