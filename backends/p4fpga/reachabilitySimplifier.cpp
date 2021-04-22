@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 #include <cstdlib>
+#include <iostream>
 #include <vector>
 #include "lib/indent.h"
 #include "lib/log.h"
@@ -66,14 +67,26 @@ const IR::Node* doReachabilitySimplifier::preorder(IR::P4Control* ctrl){
     hdr_vec = newHdr_vec;  // assign update list
     return ctrl;
 }
-
+const IR::Node* doReachabilitySimplifier::postorder(IR::BlockStatement* block){
+    if (block == nullptr ||
+        block->components.size()==0) {
+            return nullptr;
+    }
+    if (block->components.size()==1){
+        return block->components.at(0);
+    }
+    return block;
+}
 const IR::Node* doReachabilitySimplifier::preorder(IR::IfStatement* cond){
     // TODO
     // P4C_UNIMPLEMENTED("if statement in deparser");
-    LOG1("preorder " << cond->static_type_name());
+    LOG1("preorder " << cond->static_type_name() << IndentCtl::indent);
     LOG1(cond);
+    if (hdr_vec->size()==0){
+        LOG2("no possible value return nullptr");
+        return nullptr;
+    }
     LOG2("evaluate " << cond->condition);
-    auto val = P4::SymbolicBool();
     auto hdr_val_true = new std::vector<P4::ValueMap*> ();
     auto hdr_val_false = new std::vector<P4::ValueMap*> ();
     // evaluate for all possible condition value
@@ -88,55 +101,39 @@ const IR::Node* doReachabilitySimplifier::preorder(IR::IfStatement* cond){
         } else{
             hdr_val_false->push_back(hdr);
         }
-        if (val.isUninitialized()){
-            val.value = condRes->value;
-            val.state=P4::ScalarValue::ValueState::Constant;
-        } else if (val.value!=condRes->value) {
-            val.state=P4::ScalarValue::ValueState::NotConstant;
-        }
     }
     // visit condition inside with assign possible header validity
-    auto old_hdr_vec = hdr_vec;
-    hdr_vec = hdr_val_true;
-    visit(cond->ifTrue);
-    hdr_vec = hdr_val_false;
-    visit(cond->ifFalse);
-    hdr_vec = old_hdr_vec;
-
     // set condition modification (code simplification)
     // constant value
-    if (val.isKnown()){
-        LOG1("valKnown ");
-        // auto stats = new IR::IndexedVector<IR::StatOrDecl>();
-        if (val.value){
-            LOG1("returning : " << cond->ifTrue);
-            return cond->ifTrue;
-        } else {
-            LOG1("returning : " << cond->ifFalse);
-            return cond->ifFalse;
-        }
+    auto old_hdr_vec = hdr_vec;
+    LOG1("cond true list = "<< hdr_val_true->size()
+          << "cond false list = "<< hdr_val_false->size());
+    if (hdr_val_true->size() != 0) {
+        hdr_vec = hdr_val_true;
+        LOG1("visitCondTrue");
+        visit(cond->ifTrue);
     }
-    LOG1("returning : " << cond);
-    prune();
-    return cond;
-}
-
-const IR::BlockStatement* doReachabilitySimplifier::convertBody(const IR::Vector<IR::StatOrDecl>* body){
-    for (auto s : *body) {
-        if (auto block = s->to<IR::BlockStatement>()) {
-            convertBody(&block->components);
-            continue;
-        }
-        if (s->is<IR::IfStatement>()){
-            auto cond = s->to<IR::IfStatement>();
-            visit(cond);
-        }else if (s->is<IR::StatOrDecl>()){
-            auto statement = s->to<IR::StatOrDecl>();
-            visit(statement);
-        }
+    if (hdr_val_false->size() != 0){
+        hdr_vec = hdr_val_false;
+        LOG1("visitCondFalse");
+        visit(cond->ifFalse);
     }
-    auto newBody = new IR::BlockStatement();
-    return newBody;
+    LOG1_UNINDENT;
+    hdr_vec = old_hdr_vec;
+    if (hdr_val_false->size() == 0) {
+        LOG1("returning cond True ");
+        // prune();
+        return cond->ifTrue->clone();
+    } else if (hdr_val_true->size() == 0) {
+        // prune();
+        if (cond->ifFalse != nullptr) {
+            return cond->ifFalse->clone();
+        }
+        return nullptr;
+    }else{
+        LOG1("returning cond" << cond);
+        // prune();
+        return cond->clone();
+    }
 }
-
 }  // namespace FPGA
