@@ -17,6 +17,7 @@ limitations under the License.
 #ifndef BACKENDS_P4FPGA_P4FPGA_H_
 #define BACKENDS_P4FPGA_P4FPGA_H_
 
+#include <vector>
 #include "backends/p4fpga/JsonObjects.h"
 #include "ir/ir.h"
 #include "lib/json.h"
@@ -24,6 +25,7 @@ limitations under the License.
 #include "frontends/common/resolveReferences/referenceMap.h"
 #include "frontends/p4/typeMap.h"
 #include "midend/convertEnums.h"
+#include "midend/interpreter.h"
 
 
 namespace FPGA {
@@ -34,13 +36,16 @@ class FPGABackend {
     P4::ReferenceMap*    refMap;
     P4::TypeMap*         typeMap;
     P4::ConvertEnums::EnumMapping enumMap;
+    std::vector<P4::ValueMap *>* hdr_status;
 
  public:
     void serialize(std::ostream& out) const{
         json->serialize(out);
     };
     FPGABackend(P4FpgaOptions& options,
-                P4::ReferenceMap* refMap, P4::TypeMap* typeMap);
+                P4::ReferenceMap* refMap, P4::TypeMap* typeMap,
+                std::vector<P4::ValueMap *> *hdr_vec);
+
     void convert(const IR::ToplevelBlock* tlb);
 };
 
