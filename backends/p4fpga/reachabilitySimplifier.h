@@ -59,9 +59,8 @@ class ReachabilitySimplifier : public PassManager{
     explicit ReachabilitySimplifier(P4::ReferenceMap* refMap, P4::TypeMap* typeMap,
                                  std::vector<P4::ValueMap *> *hdr_status)
             {
-                auto depReduce = new doReachabilitySimplifier(refMap, typeMap, hdr_status);
                 passes.push_back(new P4::TypeChecking(refMap, typeMap));
-                passes.push_back(depReduce);
+                passes.push_back(new doReachabilitySimplifier(refMap, typeMap, hdr_status));
                 setName("reachabilitySimplifier");
             }
 };
