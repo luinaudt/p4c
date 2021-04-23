@@ -62,10 +62,9 @@ MidEnd::MidEnd(CompilerOptions& options){
         new P4::ConstantFolding(&refMap, &typeMap),
         new P4::SimplifyControlFlow(&refMap, &typeMap),
         new StaticEvaluation(&refMap, &typeMap, &hdr_status),
-        //new ReachabilitySimplifier(&refMap, &typeMap, &hdr_status),
-        new DeparserGraphCloser(&refMap, &typeMap),
-        new ReachabilitySimplifier(&refMap, &typeMap, &hdr_status),
-        new P4::ResolveReferences(&refMap),
+        new DeparserGraphCloser(&refMap, &typeMap, &hdr_status),
+        /*new ReachabilitySimplifier(&refMap, &typeMap, &hdr_status),*/
+         new P4::TypeChecking(&refMap, &typeMap),
         evaluator,
         new VisitFunctor([this, evaluator](){  // set toplevel
                             toplevel = evaluator->getToplevelBlock(); }),

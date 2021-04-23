@@ -106,33 +106,27 @@ const IR::Node* doReachabilitySimplifier::preorder(IR::IfStatement* cond){
     // set condition modification (code simplification)
     // constant value
     auto old_hdr_vec = hdr_vec;
-    LOG1("cond true list = "<< hdr_val_true->size()
-          << "cond false list = "<< hdr_val_false->size());
     if (hdr_val_true->size() != 0) {
         hdr_vec = hdr_val_true;
-        LOG1("visitCondTrue");
+        LOG3("visitCondTrue");
         visit(cond->ifTrue);
     }
     if (hdr_val_false->size() != 0){
         hdr_vec = hdr_val_false;
-        LOG1("visitCondFalse");
+        LOG3("visitCondFalse");
         visit(cond->ifFalse);
     }
     LOG1_UNINDENT;
     hdr_vec = old_hdr_vec;
+    prune();
     if (hdr_val_false->size() == 0) {
-        LOG1("returning cond True ");
-        // prune();
         return cond->ifTrue->clone();
     } else if (hdr_val_true->size() == 0) {
-        // prune();
         if (cond->ifFalse != nullptr) {
             return cond->ifFalse->clone();
         }
         return nullptr;
     }else{
-        LOG1("returning cond" << cond);
-        // prune();
         return cond->clone();
     }
 }

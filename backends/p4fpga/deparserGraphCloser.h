@@ -25,6 +25,7 @@ limitations under the License.
 #include "p4/evaluator/evaluator.h"
 #include "p4/typeChecking/typeChecker.h"
 #include "p4/typeMap.h"
+#include "backends/p4fpga/reachabilitySimplifier.h"
 
 
 namespace FPGA {
@@ -39,9 +40,7 @@ class doDeparserGraphCloser : public Transform{
     const IR::Node* preorder(IR::P4Control* ctrl) override;
     const IR::Node* preorder(IR::IfStatement* cond) override;
     const IR::Node* preorder(IR::BlockStatement* block) override;
-    const IR::Node* postorder(IR::StatOrDecl* s) override;
-    const IR::Node* preoder(IR::MethodCallStatement* s);
-    const IR::Node* preoder(IR::AssignmentStatement* s);
+    const IR::Node* preorder(IR::StatOrDecl* s) override;
     explicit doDeparserGraphCloser(P4::ReferenceMap* refMap, P4::TypeMap* typeMap)
     :  corelib(P4::P4CoreLibrary::instance), refMap(refMap), typeMap(typeMap){
             CHECK_NULL(refMap);
@@ -51,11 +50,15 @@ class doDeparserGraphCloser : public Transform{
 };
 class DeparserGraphCloser : public PassManager{
  public:
-    explicit DeparserGraphCloser(P4::ReferenceMap* refMap, P4::TypeMap* typeMap)
+    explicit DeparserGraphCloser(P4::ReferenceMap* refMap, P4::TypeMap* typeMap,
+                                std::vector<P4::ValueMap *> *hdr_status=nullptr)
             {
-                auto depReduce = new doDeparserGraphCloser(refMap, typeMap);
                 passes.push_back(new P4::TypeChecking(refMap, typeMap));
-                passes.push_back(depReduce);
+                passes.push_back(new doDeparserGraphCloser(refMap, typeMap));
+                if (hdr_status!=nullptr){
+                    passes.push_back(new doReachabilitySimplifier(refMap,
+                                                        typeMap,hdr_status));
+                }
                 setName("DeparserGraphCloser");
             }
 };
