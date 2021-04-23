@@ -30,11 +30,15 @@ FPGABackend::FPGABackend(FPGA::P4FpgaOptions& options,
 
     void FPGABackend::convert(const IR::ToplevelBlock* tlb){
         auto main = tlb->getMain();
-        auto deparser = main->findParameterValue("dep");
+        auto deparser = main->findParameterValue("dep")->to<IR::ControlBlock>()->container;
         if (!main) return;
-        // auto depReduce = new DeparserGraphCloser(refMap, typeMap);
-        // deparser->to<IR::ControlBlock>()->container->apply(*depReduce);
+        LOG1("deparserOri ");
+        LOG1(deparser);
+        auto depReduce = new doDeparserGraphCloser(refMap, typeMap);
+        deparser = deparser->apply(*depReduce);
+        LOG1("deparserRed ");
+        LOG1(deparser);
         auto depConv = new DeparserConverter(json, refMap, typeMap);
-        deparser->to<IR::ControlBlock>()->container->apply(*depConv);
+        deparser->apply(*depConv);
     }
 }  // Namespace FPGA
