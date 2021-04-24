@@ -84,8 +84,8 @@ int main(int argc, char *const argv[]) {
         return 1;
 
     // backend
-    auto backend = new FPGA::FPGABackend(options, 
-                                        &midEnd.refMap, 
+    auto backend = new FPGA::FPGABackend(options,
+                                        &midEnd.refMap,
                                         &midEnd.typeMap,
                                         &midEnd.hdr_status);
     backend->convert(toplevel);
