@@ -41,7 +41,7 @@ limitations under the License.
 namespace FPGA {
 MidEnd::MidEnd(CompilerOptions& options){
     // temporary
-    hdr_status = ValueMapList();
+    hdr_status = std::vector<ValueMapList*>();
     auto convertEnums = new P4::ConvertEnums(&refMap, &typeMap,
                                             new EnumOn32Bits("v1model.p4"));
     auto evaluator = new P4::EvaluatorPass(&refMap, &typeMap);

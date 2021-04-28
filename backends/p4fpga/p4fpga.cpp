@@ -24,7 +24,7 @@ limitations under the License.
 namespace FPGA{
 FPGABackend::FPGABackend(FPGA::P4FpgaOptions& options,
                     P4::ReferenceMap* refMap, P4::TypeMap* typeMap,
-                    ValueMapList *hdr_vec) :
+                    std::vector<ValueMapList*> *hdr_vec) :
                 options(options), refMap(refMap), typeMap(typeMap),
                 hdr_status(hdr_vec) {
         json = new FPGA::FPGAJson(options);
@@ -39,7 +39,7 @@ FPGABackend::FPGABackend(FPGA::P4FpgaOptions& options,
         auto depReduce = new doDeparserGraphCloser(refMap, typeMap);
         deparser = deparser->apply(*depReduce);
         LOG1("Deparser reduction");
-        auto depSimplifier = new doReachabilitySimplifier(refMap, typeMap, hdr_status);
+        auto depSimplifier = new doReachabilitySimplifier(refMap, typeMap, hdr_status->at(0));
         deparser = deparser->apply(*depSimplifier);
         LOG1("Deparser json creation");
         auto depConv = new DeparserConverter(json, refMap, typeMap);

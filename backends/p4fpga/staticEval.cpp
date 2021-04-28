@@ -55,6 +55,7 @@ void ValueMapList::update_list(P4::ValueMap* val){
 bool DoStaticEvaluation::preorder(const IR::ToplevelBlock *tlb) {
     LOG1("visiting program according to execution order");
     hdr = new P4::ValueMap();
+    hdr_vec = new ValueMapList();
     auto main = tlb->getMain();
     auto param = main->getConstructorParameters();
     for (auto i : *param) {
@@ -68,6 +69,7 @@ bool DoStaticEvaluation::preorder(const IR::ToplevelBlock *tlb) {
         } else {
             LOG1("other " << arg->toString());
         }
+        hdr_vec_list->push_back(hdr_vec->clone());
     }
     auto tmpHdr = hdr->map.begin()->second->clone()->to<P4::SymbolicStruct>();
     tmpHdr->setAllUnknown();

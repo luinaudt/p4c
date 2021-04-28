@@ -37,7 +37,7 @@ class FPGABackend {
     P4::ReferenceMap*    refMap;
     P4::TypeMap*         typeMap;
     P4::ConvertEnums::EnumMapping enumMap;
-    ValueMapList* hdr_status;
+    std::vector<ValueMapList*>* hdr_status;
 
  public:
     void serialize(std::ostream& out) const{
@@ -45,7 +45,7 @@ class FPGABackend {
     };
     FPGABackend(P4FpgaOptions& options,
                 P4::ReferenceMap* refMap, P4::TypeMap* typeMap,
-                ValueMapList *hdr_vec);
+                std::vector<ValueMapList*> *hdr_vec);
 
     void convert(const IR::ToplevelBlock* tlb);
 };

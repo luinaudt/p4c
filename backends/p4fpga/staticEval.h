@@ -38,6 +38,9 @@ class ValueMapList : public std::vector<P4::ValueMap*>{
     */
     using std::vector<P4::ValueMap*>::vector;
     void update_list(P4::ValueMap* val);
+    ValueMapList* clone(){
+        return new ValueMapList(*this);
+    };
 };
 
 class DoStaticEvaluation : public Inspector{
@@ -48,6 +51,7 @@ class DoStaticEvaluation : public Inspector{
     const P4::SymbolicValueFactory* factory;
     P4::ExpressionEvaluator* evaluator;
     ValueMapList*             hdr_vec;
+    std::vector<ValueMapList*> *hdr_vec_list;
 
  public:
     /**
@@ -55,8 +59,8 @@ class DoStaticEvaluation : public Inspector{
     This class goes through header according to execution order
     */
     explicit DoStaticEvaluation(P4::ReferenceMap *refMap, P4::TypeMap *typeMap,
-                                ValueMapList *hdr_vec) :
-            typeMap(typeMap), refMap(refMap), hdr_vec(hdr_vec) {
+                                std::vector<ValueMapList*> *hdr_vec) :
+            typeMap(typeMap), refMap(refMap), hdr_vec_list(hdr_vec) {
                     visitDagOnce = false;
                     factory = new P4::SymbolicValueFactory(typeMap);
                     setName("DoStaticEvaluation");}
@@ -85,7 +89,7 @@ class DoStaticEvaluation : public Inspector{
 class StaticEvaluation : public PassManager{
  public:
     explicit StaticEvaluation(P4::ReferenceMap *refMap, P4::TypeMap *typeMap,
-                              ValueMapList *hdr_vec)
+                              std::vector<ValueMapList*> *hdr_vec)
             {
                 auto evaluator = new P4::EvaluatorPass(refMap, typeMap);
                 auto evaluation = new DoStaticEvaluation(refMap, typeMap, hdr_vec);
