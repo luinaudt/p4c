@@ -88,7 +88,8 @@ int main(int argc, char *const argv[]) {
                                         &midEnd.refMap,
                                         &midEnd.typeMap,
                                         &midEnd.hdr_status);
-    backend->convert(toplevel);
+    backend->addDebugHook(hook);
+    backend->convert(program);
     if (!options.outputFile.isNullOrEmpty()) {
         std::ostream* out = openFile(options.outputFile, false);
         if (out != nullptr) {

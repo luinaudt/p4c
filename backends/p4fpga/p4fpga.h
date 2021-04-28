@@ -30,7 +30,7 @@ limitations under the License.
 
 
 namespace FPGA {
-class FPGABackend {
+class FPGABackend : public PassManager{
     P4FpgaOptions& options;
     FPGA::FPGAJson* json;
     unsigned busOutWidth;
@@ -38,16 +38,17 @@ class FPGABackend {
     P4::TypeMap*         typeMap;
     P4::ConvertEnums::EnumMapping enumMap;
     std::vector<ValueMapList*>* hdr_status;
+    const IR::ToplevelBlock* tlb;
 
  public:
     void serialize(std::ostream& out) const{
         json->serialize(out);
     };
-    FPGABackend(P4FpgaOptions& options,
+    explicit FPGABackend(P4FpgaOptions& options,
                 P4::ReferenceMap* refMap, P4::TypeMap* typeMap,
                 std::vector<ValueMapList*> *hdr_vec);
 
-    void convert(const IR::ToplevelBlock* tlb);
+    void convert(const IR::P4Program *&program);
 };
 
 
