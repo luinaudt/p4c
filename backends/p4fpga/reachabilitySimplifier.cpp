@@ -52,7 +52,7 @@ const IR::Node* doReachabilitySimplifier::preorder(IR::P4Program* prog) {
 }
 
 const IR::Node* doReachabilitySimplifier::preorder(IR::P4Control* ctrl){
-    auto newHdr_vec = new std::vector<P4::ValueMap*>();
+    auto newHdr_vec = new ValueMapList();
     auto hdrIn = ctrl->getApplyParameters()->parameters.at(1);
     auto paramType = typeMap->getType(hdrIn);
     if (!paramType->is<IR::Type_Struct>()){
@@ -87,8 +87,8 @@ const IR::Node* doReachabilitySimplifier::preorder(IR::IfStatement* cond){
         return nullptr;
     }
     LOG2("evaluate " << cond->condition);
-    auto hdr_val_true = new std::vector<P4::ValueMap*> ();
-    auto hdr_val_false = new std::vector<P4::ValueMap*> ();
+    auto hdr_val_true = new ValueMapList ();
+    auto hdr_val_false = new ValueMapList ();
     // evaluate for all possible condition value
     for (auto hdr : *hdr_vec) {
         LOG3(" with " << hdr);

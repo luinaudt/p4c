@@ -24,7 +24,7 @@ limitations under the License.
 namespace FPGA{
 FPGABackend::FPGABackend(FPGA::P4FpgaOptions& options,
                     P4::ReferenceMap* refMap, P4::TypeMap* typeMap,
-                    std::vector<P4::ValueMap *> *hdr_vec) :
+                    ValueMapList *hdr_vec) :
                 options(options), refMap(refMap), typeMap(typeMap),
                 hdr_status(hdr_vec) {
         json = new FPGA::FPGAJson(options);

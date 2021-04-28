@@ -40,9 +40,8 @@ class DeparserConverter : public Inspector {
     ordered_set<cstring>*  currentState;
     ordered_set<cstring>*  previousState;
     Util::JsonArray*       links;
-
-    P4::ReferenceMap* refMap;
-    P4::TypeMap* typeMap;
+    P4::ReferenceMap*      refMap;
+    P4::TypeMap*           typeMap;
 
  protected:
         Util::JsonObject* convertDeparser(const IR::P4Control* ctrl);

@@ -26,6 +26,7 @@ limitations under the License.
 #include "p4/typeChecking/typeChecker.h"
 #include "p4/typeMap.h"
 #include "backends/p4fpga/reachabilitySimplifier.h"
+#include "p4fpga/staticEval.h"
 
 
 namespace FPGA {
@@ -51,7 +52,7 @@ class doDeparserGraphCloser : public Transform{
 class DeparserGraphCloser : public PassManager{
  public:
     explicit DeparserGraphCloser(P4::ReferenceMap* refMap, P4::TypeMap* typeMap,
-                                std::vector<P4::ValueMap *> *hdr_status=nullptr)
+                                ValueMapList *hdr_status=nullptr)
             {
                 passes.push_back(new P4::TypeChecking(refMap, typeMap));
                 passes.push_back(new doDeparserGraphCloser(refMap, typeMap));

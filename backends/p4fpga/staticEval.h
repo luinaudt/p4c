@@ -31,6 +31,15 @@ limitations under the License.
 
 namespace FPGA{
 
+class ValueMapList : public std::vector<P4::ValueMap*>{
+ public:
+     /**
+    insert val into list, check if there is no duplicate
+    */
+    using std::vector<P4::ValueMap*>::vector;
+    void update_list(P4::ValueMap* val);
+};
+
 class DoStaticEvaluation : public Inspector{
     P4::TypeMap* typeMap;
     P4::ReferenceMap *refMap;
@@ -38,12 +47,7 @@ class DoStaticEvaluation : public Inspector{
     std::stack<P4::ValueMap*> hdr_stack;
     const P4::SymbolicValueFactory* factory;
     P4::ExpressionEvaluator* evaluator;
-    std::vector<P4::ValueMap*> *hdr_vec;
-
-    /**
-    insert val into hdr_vec, check if there is no duplicate
-    */
-    void update_hdr_vec(P4::ValueMap* val);
+    ValueMapList*             hdr_vec;
 
  public:
     /**
@@ -51,7 +55,7 @@ class DoStaticEvaluation : public Inspector{
     This class goes through header according to execution order
     */
     explicit DoStaticEvaluation(P4::ReferenceMap *refMap, P4::TypeMap *typeMap,
-                                std::vector<P4::ValueMap*> *hdr_vec) :
+                                ValueMapList *hdr_vec) :
             typeMap(typeMap), refMap(refMap), hdr_vec(hdr_vec) {
                     visitDagOnce = false;
                     factory = new P4::SymbolicValueFactory(typeMap);
@@ -81,7 +85,7 @@ class DoStaticEvaluation : public Inspector{
 class StaticEvaluation : public PassManager{
  public:
     explicit StaticEvaluation(P4::ReferenceMap *refMap, P4::TypeMap *typeMap,
-                              std::vector<P4::ValueMap *> *hdr_vec)
+                              ValueMapList *hdr_vec)
             {
                 auto evaluator = new P4::EvaluatorPass(refMap, typeMap);
                 auto evaluation = new DoStaticEvaluation(refMap, typeMap, hdr_vec);

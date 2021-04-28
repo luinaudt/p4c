@@ -30,6 +30,28 @@ limitations under the License.
 
 namespace FPGA {
 
+void ValueMapList::update_list(P4::ValueMap* val){
+    static P4::ValueMap* prev = nullptr;  // saving previous find, could be a list
+    bool in = prev!=nullptr && prev->equals(val);  // possibly in
+    if (!in){
+        // It is highly probable that last inserted will be equal to current
+        for (auto i= this->crbegin(); i!=this->crend(); ++i){
+            if (val->equals(*i)){
+                in=true;
+                prev=*i;
+                break;
+            }
+        }
+    }
+    if (!in){
+        this->push_back(val);
+        prev=val;
+        LOG2("pushing valid headers : " << val);
+    } else{
+        LOG3("valid headers already exists : " << val);
+    }
+}
+
 bool DoStaticEvaluation::preorder(const IR::ToplevelBlock *tlb) {
     LOG1("visiting program according to execution order");
     hdr = new P4::ValueMap();
@@ -139,33 +161,12 @@ void DoStaticEvaluation::postorder(const IR::SelectExpression *s){
     hdr_stack.pop();
 }
 
-void DoStaticEvaluation::update_hdr_vec(P4::ValueMap* val){
-    static P4::ValueMap* prev = nullptr;  // saving previous find, could be a list
-    bool in = prev!=nullptr && prev->equals(val);  // possibly in
-    if (!in){
-        // It is highly probable that last inserted will be equal to current
-        for (auto i= hdr_vec->crbegin(); i!=hdr_vec->crend(); ++i){
-            if (val->equals(*i)){
-                in=true;
-                prev=*i;
-                break;
-            }
-        }
-    }
-    if (!in){
-        hdr_vec->push_back(val);
-        prev=val;
-        LOG2("pushing valid headers : " << val);
-    } else{
-        LOG3("valid headers already exists : " << val);
-    }
-}
 bool DoStaticEvaluation::preorder(const IR::Path *path){
     LOG3("visiting " << path->static_type_name() << " "<< path);
     if (path->name == IR::ParserState::accept ||
             path->name == IR::ParserState::reject){
         LOG2("terminal state");
-        update_hdr_vec(hdr->clone());
+        hdr_vec->update_list(hdr->clone());
         return false;
     }
     auto next=refMap->getDeclaration(path, false)->to<IR::Node>();

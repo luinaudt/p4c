@@ -26,6 +26,7 @@ limitations under the License.
 #include "frontends/p4/typeMap.h"
 #include "midend/convertEnums.h"
 #include "midend/interpreter.h"
+#include "p4fpga/staticEval.h"
 
 
 namespace FPGA {
@@ -36,7 +37,7 @@ class FPGABackend {
     P4::ReferenceMap*    refMap;
     P4::TypeMap*         typeMap;
     P4::ConvertEnums::EnumMapping enumMap;
-    std::vector<P4::ValueMap *>* hdr_status;
+    ValueMapList* hdr_status;
 
  public:
     void serialize(std::ostream& out) const{
@@ -44,7 +45,7 @@ class FPGABackend {
     };
     FPGABackend(P4FpgaOptions& options,
                 P4::ReferenceMap* refMap, P4::TypeMap* typeMap,
-                std::vector<P4::ValueMap *> *hdr_vec);
+                ValueMapList *hdr_vec);
 
     void convert(const IR::ToplevelBlock* tlb);
 };

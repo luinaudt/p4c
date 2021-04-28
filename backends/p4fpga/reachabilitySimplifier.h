@@ -25,6 +25,7 @@ limitations under the License.
 #include "p4/evaluator/evaluator.h"
 #include "p4/typeChecking/typeChecker.h"
 #include "p4/typeMap.h"
+#include "p4fpga/staticEval.h"
 
 
 namespace FPGA {
@@ -34,7 +35,7 @@ class doReachabilitySimplifier : public Transform{
     P4::TypeMap* typeMap;
     P4::ExpressionEvaluator* evaluator;
     const P4::SymbolicValueFactory* factory;
-    std::vector<P4::ValueMap*> *hdr_vec;
+    ValueMapList *hdr_vec;
 
  public:
     const IR::Node* preorder(IR::P4Program* prog) override;
@@ -43,7 +44,7 @@ class doReachabilitySimplifier : public Transform{
     const IR::Node* postorder(IR::BlockStatement* block) override;
 
     explicit doReachabilitySimplifier(P4::ReferenceMap* refMap, P4::TypeMap* typeMap,
-                                 std::vector<P4::ValueMap *> *hdr_status)
+                                 ValueMapList *hdr_status)
     :  corelib(P4::P4CoreLibrary::instance), refMap(refMap), typeMap(typeMap),
         hdr_vec(hdr_status){
             visitDagOnce = false;
@@ -57,7 +58,7 @@ class doReachabilitySimplifier : public Transform{
 class ReachabilitySimplifier : public PassManager{
  public:
     explicit ReachabilitySimplifier(P4::ReferenceMap* refMap, P4::TypeMap* typeMap,
-                                 std::vector<P4::ValueMap *> *hdr_status)
+                                 ValueMapList *hdr_status)
             {
                 passes.push_back(new P4::TypeChecking(refMap, typeMap));
                 passes.push_back(new doReachabilitySimplifier(refMap, typeMap, hdr_status));

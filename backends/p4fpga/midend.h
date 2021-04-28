@@ -62,7 +62,7 @@ class MidEnd : public PassManager {
     P4::ReferenceMap    refMap;
     P4::TypeMap         typeMap;
     P4::ConvertEnums::EnumMapping enumMap;
-    std::vector<P4::ValueMap*> hdr_status;  // status of all possible hdrs
+    ValueMapList        hdr_status;  // status of all possible hdrs
     const IR::ToplevelBlock   *toplevel = nullptr;
 
     explicit MidEnd(CompilerOptions& options);
