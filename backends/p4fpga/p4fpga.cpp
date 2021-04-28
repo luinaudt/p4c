@@ -16,7 +16,7 @@ limitations under the License.
 
 #include "backends/p4fpga/p4fpga.h"
 #include "common/options.h"
-#include "ir/ir-generated.h"
+#include "ir/ir.h"
 #include "backends/p4fpga/deparser.h"
 #include "backends/p4fpga/deparserGraphCloser.h"
 #include "p4/evaluator/evaluator.h"
@@ -33,31 +33,33 @@ FPGABackend::FPGABackend(FPGA::P4FpgaOptions& options,
         auto evaluator = new P4::EvaluatorPass(refMap, typeMap);
         addPasses({
             new doDeparserGraphCloser(refMap, typeMap),
-            evaluator,
-            new VisitFunctor([this, evaluator](){  // set toplevel
-                            tlb = evaluator->getToplevelBlock();})
+            new doReachabilitySimplifier(refMap,
+                                         typeMap,
+                                         hdr_status->at(4))
         });
     }
 void FPGABackend::convert(const IR::P4Program *&program){
     program = program->apply(*this);
-    auto main = tlb->getMain();
-    auto deparser = main->findParameterValue("dep")->to<IR::ControlBlock>()->container;
-    auto depPos = tlb->getMain()->getConstructorParameters()->parameters.size();
+    LOG2("end passes");
+    auto mainDecls = program->getDeclsByName(IR::P4Program::main)->toVector();
+    auto main = mainDecls->at(0)->to<IR::Declaration_Instance>();
+    auto deparser = main->arguments->at(main->arguments->size()-1);
+    auto depType = deparser->expression->type->getP4Type();
+
     if (!main) return;
-    /*
-    LOG1("Transitive closure of the deparser");
-    auto depClose = new doDeparserGraphCloser(refMap, typeMap);
-    deparser = deparser->apply(*depClose);*/
-    LOG2(deparser);
-    LOG1("Deparser reduction");
-    auto depSimplifier = new doReachabilitySimplifier(refMap,
-                                                        typeMap,
-                                                        hdr_status->at(depPos-2));
-    deparser = deparser->apply(*depSimplifier);
-    LOG2(deparser);
-    LOG1("Deparser json creation");
     auto depConv = new DeparserConverter(json, refMap, typeMap);
-    deparser->apply(*depConv);
+    LOG2(deparser);
+    int pos=0;
+    for (auto i : program->objects) {
+        if (i->is<IR::P4Control>()){
+            auto block = i->to<IR::P4Control>();
+            // we only visit deparsers.
+            if (block->type->getP4Type()->equiv(*depType->getNode())) {
+                block->apply(*depConv);
+            }
+        }
+        pos++;
+    }
 }
 
 }  // Namespace FPGA
