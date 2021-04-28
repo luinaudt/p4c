@@ -34,13 +34,18 @@ FPGABackend::FPGABackend(FPGA::P4FpgaOptions& options,
     void FPGABackend::convert(const IR::ToplevelBlock* tlb){
         auto main = tlb->getMain();
         auto deparser = main->findParameterValue("dep")->to<IR::ControlBlock>()->container;
+        auto depPos = tlb->getMain()->getConstructorParameters()->parameters.size();
         if (!main) return;
-        LOG1("Transitive closure deparser");
-        auto depReduce = new doDeparserGraphCloser(refMap, typeMap);
-        deparser = deparser->apply(*depReduce);
+        LOG1("Transitive closure of the deparser");
+        auto depClose = new doDeparserGraphCloser(refMap, typeMap);
+        deparser = deparser->apply(*depClose);
+        LOG2(deparser);
         LOG1("Deparser reduction");
-        auto depSimplifier = new doReachabilitySimplifier(refMap, typeMap, hdr_status->at(0));
+        auto depSimplifier = new doReachabilitySimplifier(refMap,
+                                                          typeMap,
+                                                          hdr_status->at(depPos-2));
         deparser = deparser->apply(*depSimplifier);
+        LOG2(deparser);
         LOG1("Deparser json creation");
         auto depConv = new DeparserConverter(json, refMap, typeMap);
         deparser->apply(*depConv);
