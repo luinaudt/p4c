@@ -73,10 +73,11 @@ bool DeparserConverter::preorder(const IR::IfStatement* block){
         for (auto cs : *stateTrue){
             currentState->insert(cs);
         }
-    }
+    } else {
     // append state ori to state true
-    for (auto cs : *oriState){
-        currentState->insert(cs);
+        for (auto cs : *oriState){
+            currentState->insert(cs);
+        }
     }
     // condList->pop_back();
     return false;
