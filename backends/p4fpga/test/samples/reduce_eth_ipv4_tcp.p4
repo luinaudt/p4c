@@ -106,7 +106,7 @@ control MyDeparser(packet_out pkt, in headers hdr) {
     apply {
 	if(hdr.ethernet.isValid()){
             pkt.emit(hdr.ethernet);
-	    if(hdr.ipv4.isValid(){
+	    if(hdr.ipv4.isValid()){
 	        pkt.emit(hdr.ipv4);
 		if(hdr.tcp.isValid()){
 		    pkt.emit(hdr.tcp);
