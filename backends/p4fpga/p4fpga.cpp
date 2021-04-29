@@ -30,14 +30,13 @@ FPGABackend::FPGABackend(FPGA::P4FpgaOptions& options,
                 hdr_status(hdr_vec){
         json = new FPGA::FPGAJson(options);
         busOutWidth = options.outBusWidth;
-        auto evaluator = new P4::EvaluatorPass(refMap, typeMap);
         addPasses({
             new doDeparserGraphCloser(refMap, typeMap),
-            new doReachabilitySimplifier(refMap,
-                                         typeMap,
+            new doReachabilitySimplifier(refMap, typeMap,
                                          hdr_status->at(4))
         });
-    }
+}
+
 void FPGABackend::convert(const IR::P4Program *&program){
     program = program->apply(*this);
     LOG2("end passes");
