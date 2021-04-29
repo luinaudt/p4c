@@ -19,7 +19,6 @@ limitations under the License.
 #include <stack>
 #include <vector>
 #include "common/resolveReferences/referenceMap.h"
-#include "ir/ir-generated.h"
 #include "ir/ir.h"
 #include "ir/pass_manager.h"
 #include "ir/vector.h"
@@ -33,25 +32,30 @@ namespace FPGA{
 
 class ValueMapList : public std::vector<P4::ValueMap*>{
  public:
+    using std::vector<P4::ValueMap*>::vector;
      /**
     insert val into list, check if there is no duplicate
     */
-    using std::vector<P4::ValueMap*>::vector;
-    void update_list(P4::ValueMap* val);
+    void push_unique(P4::ValueMap* val);
+    /**
+    reset all hdr to match a new control block
+    */
+    ValueMapList* update_hdr_ref(const IR::Parameter* hdrParam);
     ValueMapList* clone(){
         return new ValueMapList(*this);
     };
 };
 
 class DoStaticEvaluation : public Inspector{
-    P4::TypeMap* typeMap;
-    P4::ReferenceMap *refMap;
-    P4::ValueMap* hdr;
+    P4::TypeMap*              typeMap;
+    P4::ReferenceMap*         refMap;
+    P4::ValueMap*             hdr;
     std::stack<P4::ValueMap*> hdr_stack;
-    const P4::SymbolicValueFactory* factory;
-    P4::ExpressionEvaluator* evaluator;
+    P4::ExpressionEvaluator*  evaluator;
     ValueMapList*             hdr_vec;
+    ValueMapList*             hdr_vecIn;
     std::vector<ValueMapList*> *hdr_vec_list;
+    const P4::SymbolicValueFactory* factory;
 
  public:
     /**
@@ -73,6 +77,7 @@ class DoStaticEvaluation : public Inspector{
     bool preorder(const IR::MethodCallStatement *stat) override;
     bool preorder(const IR::MethodCallExpression *expr) override;
     bool preorder(const IR::ParserState *state) override;
+    bool preorder(const IR::BlockStatement *block) override;
     bool preorder(const IR::IfStatement *stat) override {return true;};
 
     // postorder

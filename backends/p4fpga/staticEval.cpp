@@ -16,7 +16,6 @@ limitations under the License.
 
 
 #include "backends/p4fpga/staticEval.h"
-#include "ir/ir-generated.h"
 #include "ir/ir.h"
 #include "ir/node.h"
 #include "lib/error.h"
@@ -29,8 +28,17 @@ limitations under the License.
 #include "p4/methodInstance.h"
 
 namespace FPGA {
+ValueMapList* ValueMapList::update_hdr_ref(const IR::Parameter* hdrParam){
+    auto newMap = new P4::ValueMap();
+    auto newHdr_vec = new ValueMapList();
+    for (auto hdr : *this){
+        newMap->set(hdrParam, hdr->map.begin()->second);
+        newHdr_vec->push_back(newMap->clone());
+    }
+    return newHdr_vec;
+}
 
-void ValueMapList::update_list(P4::ValueMap* val){
+void ValueMapList::push_unique(P4::ValueMap* val){
     static P4::ValueMap* prev = nullptr;  // saving previous find, could be a list
     bool in = prev!=nullptr && prev->equals(val);  // possibly in
     if (!in){
@@ -109,6 +117,11 @@ bool DoStaticEvaluation::preorder(const IR::P4Parser *block){
         ::error(ErrorType::ERR_UNEXPECTED,
                 "%1%: param is not a struct", paramType);
     }
+    if (hdrIn->direction == IR::Direction::Out) {
+        hdr_vecIn = nullptr;
+    } else if (hdrIn->direction == IR::Direction::InOut) {
+        hdr_vecIn = hdr_vec->clone();
+    }
     evaluator = new P4::ExpressionEvaluator(refMap, typeMap, hdr);
     auto val = factory->create(paramType, true);
     hdr->set(hdrIn, val);
@@ -168,7 +181,7 @@ bool DoStaticEvaluation::preorder(const IR::Path *path){
     if (path->name == IR::ParserState::accept ||
             path->name == IR::ParserState::reject){
         LOG2("terminal state");
-        hdr_vec->update_list(hdr->clone());
+        hdr_vec->push_unique(hdr->clone());
         return false;
     }
     auto next=refMap->getDeclaration(path, false)->to<IR::Node>();
@@ -178,6 +191,7 @@ bool DoStaticEvaluation::preorder(const IR::Path *path){
     }
     return false;
 }
+
 bool DoStaticEvaluation::preorder(const IR::P4Control *block){
     LOG1("visiting " << block->static_type_name() << " " << block->getName() << IndentCtl::indent);
     auto hdrIn = block->getApplyParameters()->parameters.at(0);
@@ -193,16 +207,24 @@ bool DoStaticEvaluation::preorder(const IR::P4Control *block){
         ::error(ErrorType::ERR_UNEXPECTED,
                 "%1%: param is not a struct", paramType);
     }
-    auto newMap = new P4::ValueMap();
-    newMap->set(hdrIn, hdr->map.begin()->second);
-    hdr = newMap;
-    evaluator = new P4::ExpressionEvaluator(refMap, typeMap, hdr);
-    // FIXME - for test
-    if (isDep){
-        return true;
+    if (hdrIn->direction == IR::Direction::In){
+        LOG1("Read only Headers");
+        LOG1_UNINDENT;
+        return false;
+    } else if (hdrIn->direction == IR::Direction::Out) {
+        hdr_vecIn = nullptr;
+    } else if (hdrIn->direction == IR::Direction::InOut) {
+        hdr_vecIn = hdr_vec->clone();
     }
-    LOG1_UNINDENT;
-    return isDep;
+    // update valueMapList
+    hdr_vec = hdr_vec->update_hdr_ref(hdrIn);
+    hdr = hdr_vec->at(0);
+    evaluator = new P4::ExpressionEvaluator(refMap, typeMap, hdr);
+    return true;
+}
+bool DoStaticEvaluation::preorder(const IR::BlockStatement *block){
+    LOG1("visiting " << block->static_type_name());
+    return true;
 }
 
 /**

@@ -52,19 +52,13 @@ const IR::Node* doReachabilitySimplifier::preorder(IR::P4Program* prog) {
 }
 
 const IR::Node* doReachabilitySimplifier::preorder(IR::P4Control* ctrl){
-    auto newHdr_vec = new ValueMapList();
     auto hdrIn = ctrl->getApplyParameters()->parameters.at(1);
     auto paramType = typeMap->getType(hdrIn);
     if (!paramType->is<IR::Type_Struct>()){
         ::error(ErrorType::ERR_UNEXPECTED,
                 "%1%: param is not a struct", paramType);}
     // update values Map with correct references
-    auto newMap = new P4::ValueMap();
-    for (auto hdr : *hdr_vec){
-        newMap->set(hdrIn, hdr->map.begin()->second);
-        newHdr_vec->push_back(newMap->clone());
-    }
-    hdr_vec = newHdr_vec;  // assign update list
+    hdr_vec = hdr_vec->update_hdr_ref(hdrIn);  // assign update list
     return ctrl;
 }
 const IR::Node* doReachabilitySimplifier::postorder(IR::BlockStatement* block){
