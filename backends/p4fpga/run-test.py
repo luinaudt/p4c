@@ -16,7 +16,7 @@
 import sys
 import os
 import argparse
-from subprocess import Popen,PIPE
+from subprocess import Popen,PIPE, TimeoutExpired
 from pathlib import Path
 import shutil
 
@@ -44,36 +44,16 @@ class Local(object):
     pass
 
 def mkOutputDir(dir, jsonFolder, p4Folder):
-    os.mkdir(dir)
-    os.mkdir(os.path.join(dir, jsonFolder))
-    os.mkdir(os.path.join(dir, p4Folder))
+    if not os.path.exists(dir):
+        os.mkdir(dir)
+    if not os.path.exists(os.path.join(dir, jsonFolder)):
+        os.mkdir(os.path.join(dir, jsonFolder))
+    if not os.path.exists(os.path.join(dir, p4Folder)):
+        os.mkdir(os.path.join(dir, p4Folder))
 
-def main(argv):
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--inputFolder", help="folder of p4 source files", required=True)
-    parser.add_argument("--outputTest", help="output folder results", required=True)
-    parser.add_argument("--compiler", help="compiler executable", required=True)
-    parser.add_argument("--passToDump", help="pass to dump", required=False, default="Last,Backend")
-    args = parser.parse_args()
-    error = False
-    if not os.path.exists(args.inputFolder):
-        print("input programs : {} does not exists".format(args.inputFolder))
-        error = True
-    if os.path.exists(args.outputTest):
-        print("Test result : {} does exists".format(args.outputTest))
-        error = True
-        rep = input("replace result in Folder y/n ? ")
-        if rep in ("y", "Y"):
-            error = False
-            shutil.rmtree(args.outputTest, ignore_errors=True)    
-    
-    if not os.path.exists(args.inputFolder):
-        print("Compiler {} does not exists".format(args.compiler))
-        error = True
-    if error: exit(1)
-    mkOutputDir(args.outputTest, JSONFOLDER, P4FOLDER)
-
-# command example : ./p4c/p4fpga --top4 Last,FPGABackend --dump . -o test_new.json src/testComp/t0.p4
+def process(args):
+    # command example : ./p4c/p4fpga --top4 Last,FPGABackend --dump . -o test_new.json src/testComp/t0.p4
+    commands = []
     for i in os.listdir(os.path.join(args.inputFolder)):
         if Path(i).suffix != ".p4":
             continue
@@ -83,13 +63,68 @@ def main(argv):
         cmdArgs = [args.compiler, 
                    "-o", str(jsonOutFile), 
                    "--dump", str(dumpFolder),
-                   "--top4", ",".join(args.passToDump.split(" ")),
+                   "--top4", ",".join(args.passToDump),
                    os.path.join(args.inputFolder, i)]
+        commands.append(cmdArgs)
+
+    launchCompilation(commands, args.nbThreads)
+
+
+def launchCompilation(commands, nbThread=1):
+    """ 
+    commands must be a list
+    launch all commands : multithreads
+    """
+    localList = []
+    for cmdArgs in commands:
         print(" ".join(cmdArgs))
         local = Local()
         local.process = Popen(cmdArgs)
-        local.process.wait()
+        localList.append(local)
+        while len(localList) >= nbThread:
+            for local in localList:
+                try:
+                    local.process.wait(0.1)
+                except TimeoutExpired:
+                    continue
+                else:
+                    localList.remove(local)
+    #wait everything finish
+    while len(localList) > 0:
+        for local in localList:
+            try:
+                local.process.wait(0.1)
+            except TimeoutExpired:
+                continue
+            else:
+                localList.remove(local)
 
+def main(argv):
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("--inputFolder", help="folder of p4 source files", required=True)
+    parser.add_argument("--outputTest", help="output folder results", required=True)
+    parser.add_argument("--compiler", help="compiler executable", required=True)
+    parser.add_argument("--nbThreads", help="number of parallel compilation",type=int, default=1, required=False)
+    parser.add_argument("--passToDump", help="pass to dump", nargs='+', default=["Last","Backend"], required=False)
+    args = parser.parse_args()
+    error = False
+    if not os.path.exists(args.inputFolder):
+        print("input programs : {} does not exists".format(args.inputFolder))
+        error = True
+    if os.path.exists(args.outputTest):
+        print("Test result : {} does exists".format(args.outputTest))
+        error = True
+        rep = input("overwrite y/n ? ")
+        if rep in ("y", "Y"):
+            error = False
+        else:
+            print("exit, output folder already exist")
+    if not os.path.exists(args.inputFolder):
+        print("Compiler {} does not exists".format(args.compiler))
+        error = True
+    if error: exit(1)
+    mkOutputDir(args.outputTest, JSONFOLDER, P4FOLDER)
+    process(args)
     
     
 if __name__ == "__main__":
