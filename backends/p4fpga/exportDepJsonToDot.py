@@ -18,12 +18,43 @@ import networkx
 import json
 import getopt
 import sys
+import os
+from pathlib import Path
 
-def convert(fileName = "a.out", outfileName= "a.dot", deparserName = "deparser"):
-    with open(fileName,'r') as f:
+def convertFolder(inputFolder, outputFolder, deparserName):
+    if not os.path.exists(outputFolder):
+        print("making output folder {}".format(outputFolder))
+        os.mkdir(outputFolder)
+    if not os.path.isdir(outputFolder):
+        print("if input is a folder output must be a folder")
+        sys.exit(1)
+    for i in os.listdir(inputFolder):
+        if os.path.isdir(i):
+            convertFolder(os.path.join(inputFolder, i),
+                          os.path.join(outputFolder,i),
+                          deparserName)
+        outFile = Path(os.path.join(outputFolder, i))
+        outFile = str(outFile.parent.joinpath(outFile.stem + ".dot"))
+        convertFile(str(os.path.join(inputFolder,i)), outFile ,deparserName)
+        
+
+def convertFile(inputFile, outputFile, deparserName):
+    if Path(inputFile).suffix != ".json":
+        print("{} is not a json suffix".format(inputFile))
+        print("exit convertion")
+        return
+    print("processing {}".format(inputFile))
+    with open(inputFile,'r') as f:
         deparser = json.load(f)[deparserName]
     graph = networkx.readwrite.json_graph.node_link_graph(deparser, directed=True)
-    networkx.drawing.nx_agraph.write_dot(graph, outfileName)
+    networkx.drawing.nx_agraph.write_dot(graph, outputFile)
+
+def convert(fileName = "a.out", outfileName= "a.dot", deparserName = "deparser"):
+    if os.path.isdir(fileName):
+        convertFolder(fileName, outfileName, deparserName)
+    else:
+        convertFile(fileName, outfileName, deparserName)
+    
 
 def main(prog, argv):
     inputFile = "a.out"
@@ -50,7 +81,11 @@ def main(prog, argv):
             deparserName = arg
         elif opt in ("-i", "--inputFile"):
             inputFile = arg
-    convert(inputFile, outputFile, deparserName)
+    if os.path.exists(inputFile):
+        convert(inputFile, outputFile, deparserName)
+    else:
+        print("{} does not exists".format(inputFile))
+        sys.exit(1)
     
 
 if __name__ == "__main__":
