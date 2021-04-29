@@ -39,6 +39,9 @@ class Options(object):
 JSONFOLDER = "json"
 P4FOLDER = "p4"
 
+class Local(object):
+    # object to hold local vars accessable to nested functions
+    pass
 
 def mkOutputDir(dir, jsonFolder, p4Folder):
     os.mkdir(dir)
@@ -59,7 +62,7 @@ def main(argv):
     if os.path.exists(args.outputTest):
         print("Test result : {} does exists".format(args.outputTest))
         error = True
-        rep = input("replace result in Folder ? y/n")
+        rep = input("replace result in Folder y/n ? ")
         if rep in ("y", "Y"):
             error = False
             shutil.rmtree(args.outputTest, ignore_errors=True)    
@@ -76,11 +79,15 @@ def main(argv):
         jsonOutFile = str(jsonOutFile.parent.joinpath(jsonOutFile.stem + ".json"))
         dumpFolder = str(os.path.join(args.outputTest, P4FOLDER))
         cmdArgs = [args.compiler, 
-                   "-o {}".format(jsonOutFile), 
-                   "--dump {}".format(dumpFolder),
-                   "--top4 {}".format(",".join(args.passToDump.split(" "))),
+                   "-o", str(jsonOutFile), 
+                   "--dump", str(dumpFolder),
+                   "--top4", ",".join(args.passToDump.split(" ")),
                    os.path.join(args.inputFolder, i)]
         print(" ".join(cmdArgs))
+        local = Local()
+        local.process = Popen(cmdArgs)
+        local.process.wait()
+
     
     
 if __name__ == "__main__":
