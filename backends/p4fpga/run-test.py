@@ -16,6 +16,9 @@
 import sys
 import os
 import argparse
+from subprocess import Popen,PIPE
+from pathlib import Path
+import shutil
 
 SUCCESS = 0
 FAILURE = 1
@@ -32,30 +35,52 @@ class Options(object):
         self.runDebugger = False
         self.runDebugger_skip = 0
         self.generateP4Runtime = False
+# standard value, might be change in the future
+JSONFOLDER = "json"
+P4FOLDER = "p4"
 
-def usage(options):
-    name = options.binary
-    print(name, "usage:")
 
-
+def mkOutputDir(dir, jsonFolder, p4Folder):
+    os.mkdir(dir)
+    os.mkdir(os.path.join(dir, jsonFolder))
+    os.mkdir(os.path.join(dir, p4Folder))
 
 def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--inputFolder", help="folder of p4 source files", required=True)
-    parser.add_argument("--outputTest", help="output folder resultst", required=True)
-    parser.add_argument("--compiler", help="compiler path", required=True)
+    parser.add_argument("--outputTest", help="output folder results", required=True)
+    parser.add_argument("--compiler", help="compiler executable", required=True)
+    parser.add_argument("--passToDump", help="pass to dump", required=False, default="Last,Backend")
     args = parser.parse_args()
     error = False
     if not os.path.exists(args.inputFolder):
-        print(f"input programs : {args.inputFolder} does not exists" )
+        print("input programs : {} does not exists".format(args.inputFolder))
         error = True
-    if not os.path.exists(args.outputTest):
-        print(f"Test result : {args.outputTest} does not exists" )
+    if os.path.exists(args.outputTest):
+        print("Test result : {} does exists".format(args.outputTest))
         error = True
+        rep = input("replace result in Folder ? y/n")
+        if rep in ("y", "Y"):
+            error = False
+            shutil.rmtree(args.outputTest, ignore_errors=True)    
+    
     if not os.path.exists(args.inputFolder):
-        print(f"Compiler {args.compiler} does not exists" )
+        print("Compiler {} does not exists".format(args.compiler))
         error = True
     if error: exit(1)
+    mkOutputDir(args.outputTest, JSONFOLDER, P4FOLDER)
+
+# command example : ./p4c/p4fpga --top4 Last,FPGABackend --dump . -o test_new.json src/testComp/t0.p4
+    for i in os.listdir(os.path.join(args.inputFolder)):
+        jsonOutFile = Path(os.path.join(args.outputTest, "json", i))
+        jsonOutFile = str(jsonOutFile.parent.joinpath(jsonOutFile.stem + ".json"))
+        dumpFolder = str(os.path.join(args.outputTest, P4FOLDER))
+        cmdArgs = [args.compiler, 
+                   "-o {}".format(jsonOutFile), 
+                   "--dump {}".format(dumpFolder),
+                   "--top4 {}".format(",".join(args.passToDump.split(" "))),
+                   os.path.join(args.inputFolder, i)]
+        print(" ".join(cmdArgs))
     
     
 if __name__ == "__main__":
