@@ -75,6 +75,8 @@ def main(argv):
 
 # command example : ./p4c/p4fpga --top4 Last,FPGABackend --dump . -o test_new.json src/testComp/t0.p4
     for i in os.listdir(os.path.join(args.inputFolder)):
+        if Path(i).suffix != ".p4":
+            continue
         jsonOutFile = Path(os.path.join(args.outputTest, "json", i))
         jsonOutFile = str(jsonOutFile.parent.joinpath(jsonOutFile.stem + ".json"))
         dumpFolder = str(os.path.join(args.outputTest, P4FOLDER))
