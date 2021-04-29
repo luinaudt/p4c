@@ -82,6 +82,7 @@ bool DeparserConverter::preorder(const IR::IfStatement* block){
     // condList->pop_back();
     return false;
 }
+
 bool DeparserConverter::preorder(const IR::MethodCallStatement* s){
     // TODO add verification for extern type : emit statement
     auto mi = P4::MethodInstance::resolve(s->methodCall, refMap, typeMap);
@@ -127,4 +128,5 @@ void DeparserConverter::postorder(const IR::P4Control* control) {
     dep->emplace("links", links);
     json->setDeparser(dep);
 }
+
 }  // namespace FPGA
