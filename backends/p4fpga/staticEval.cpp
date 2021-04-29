@@ -38,22 +38,28 @@ ValueMapList* ValueMapList::update_hdr_ref(const IR::Parameter* hdrParam){
     return newHdr_vec;
 }
 
+void ValueMapList::merge(ValueMapList* list){
+    LOG2("merging list with hdrVec");
+    if (this == list) { return; }
+    for (auto i : *list) {
+        LOG3(i);
+        this->push_unique(i);
+    }
+}
+
 void ValueMapList::push_unique(P4::ValueMap* val){
-    static P4::ValueMap* prev = nullptr;  // saving previous find, could be a list
-    bool in = prev!=nullptr && prev->equals(val);  // possibly in
-    if (!in){
-        // It is highly probable that last inserted will be equal to current
-        for (auto i= this->crbegin(); i!=this->crend(); ++i){
-            if (val->equals(*i)){
-                in=true;
-                prev=*i;
-                break;
-            }
+    // TODO - look at way to improve search speed
+    bool in = false;
+    // It is highly probable that last inserted will be equal to current
+    for (auto i= this->crbegin(); i!=this->crend(); ++i){
+        if (val->equals(*i)){
+            in=true;
+            break;
         }
     }
+
     if (!in){
         this->push_back(val);
-        prev=val;
         LOG2("pushing valid headers : " << val);
     } else{
         LOG3("valid headers already exists : " << val);
@@ -196,12 +202,10 @@ bool DoStaticEvaluation::preorder(const IR::P4Control *block){
     LOG1("visiting " << block->static_type_name() << " " << block->getName() << IndentCtl::indent);
     auto hdrIn = block->getApplyParameters()->parameters.at(0);
     auto paramType = typeMap->getType(hdrIn);
-    bool isDep = false;
     if (!paramType->is<IR::Type_Struct>()){
         // FIXME - Special case for deparser
         hdrIn = block->getApplyParameters()->parameters.at(1);
         paramType = typeMap->getType(hdrIn);
-        isDep = true;
     }
     if (!paramType->is<IR::Type_Struct>()){
         ::error(ErrorType::ERR_UNEXPECTED,
@@ -211,20 +215,28 @@ bool DoStaticEvaluation::preorder(const IR::P4Control *block){
         LOG1("Read only Headers");
         LOG1_UNINDENT;
         return false;
-    } else if (hdrIn->direction == IR::Direction::Out) {
-        hdr_vecIn = nullptr;
-    } else if (hdrIn->direction == IR::Direction::InOut) {
-        hdr_vecIn = hdr_vec->clone();
     }
+
     // update valueMapList
     hdr_vec = hdr_vec->update_hdr_ref(hdrIn);
-    hdr = hdr_vec->at(0);
-    evaluator = new P4::ExpressionEvaluator(refMap, typeMap, hdr);
+    if (hdrIn->direction == IR::Direction::Out) {
+        hdr_vecIn = nullptr;
+    } else if (hdrIn->direction == IR::Direction::InOut) {
+        hdr_vecIn = hdr_vec;
+    }
     return true;
 }
+
 bool DoStaticEvaluation::preorder(const IR::BlockStatement *block){
     LOG1("visiting " << block->static_type_name());
     return true;
+}
+
+void DoStaticEvaluation::postorder(const IR::BlockStatement *block){
+    LOG1("postorder " << block->static_type_name());
+    if (hdr_vecIn != nullptr){
+        hdr_vec->merge(hdr_vecIn);
+    }
 }
 
 /**
@@ -239,9 +251,18 @@ bool DoStaticEvaluation::preorder(const IR::MethodCallStatement *stat){
     return false;
 }
 bool DoStaticEvaluation::preorder(const IR::MethodCallExpression *expr){
-    auto res = evaluator->evaluate(expr, false);
-    LOG2("evaluation of " << expr->toString());
-    LOG3("  got: " << res);
+    if (hdr_vecIn != nullptr) {
+        for (auto i : *hdr_vecIn){
+            evaluator = new P4::ExpressionEvaluator(refMap, typeMap, i);
+            auto res = evaluator->evaluate(expr, false);
+            LOG2("evaluation of " << expr->toString());
+            LOG3("  got: " << res);
+        }
+    } else{
+        auto res = evaluator->evaluate(expr, false);
+        LOG2("evaluation of " << expr->toString());
+        LOG3("  got: " << res);
+    }
     return false;
 }
 

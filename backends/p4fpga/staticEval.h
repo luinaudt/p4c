@@ -37,6 +37,7 @@ class ValueMapList : public std::vector<P4::ValueMap*>{
     insert val into list, check if there is no duplicate
     */
     void push_unique(P4::ValueMap* val);
+    void merge(ValueMapList* val);
     /**
     reset all hdr to match a new control block
     */
@@ -81,6 +82,7 @@ class DoStaticEvaluation : public Inspector{
     bool preorder(const IR::IfStatement *stat) override {return true;};
 
     // postorder
+    void postorder(const IR::BlockStatement *block) override;
     void postorder(const IR::SelectCase *s) override;
     void postorder(const IR::P4Control *block) override {
         LOG1_UNINDENT;
