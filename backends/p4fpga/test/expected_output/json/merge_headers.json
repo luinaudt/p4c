@@ -1,0 +1,103 @@
+{
+  "outputBus" : 64,
+  "parser" : {
+  },
+  "control" : {
+  },
+  "deparser" : {
+    "name" : "MyDeparser",
+    "nodes" : [
+      {
+        "id" : "<start>"
+      },
+      {
+        "id" : "hdr.ethernet_112"
+      },
+      {
+        "id" : "hdr.ipv4_160"
+      },
+      {
+        "id" : "hdr.intermediate_16"
+      },
+      {
+        "id" : "hdr.tcp_160"
+      },
+      {
+        "id" : "hdr.udp_64"
+      },
+      {
+        "id" : "hdr.ipv6_320"
+      },
+      {
+        "id" : "<end>"
+      }
+    ],
+    "links" : [
+      {
+        "source" : "<start>",
+        "target" : "hdr.ethernet_112",
+        "label" : ""
+      },
+      {
+        "source" : "hdr.ethernet_112",
+        "target" : "hdr.ipv4_160",
+        "label" : "hdr.ipv4.isValid"
+      },
+      {
+        "source" : "hdr.ipv4_160",
+        "target" : "hdr.intermediate_16",
+        "label" : ""
+      },
+      {
+        "source" : "hdr.intermediate_16",
+        "target" : "hdr.tcp_160",
+        "label" : "hdr.tcp.isValid"
+      },
+      {
+        "source" : "hdr.intermediate_16",
+        "target" : "hdr.udp_64",
+        "label" : "hdr.udp.isValid"
+      },
+      {
+        "source" : "hdr.ethernet_112",
+        "target" : "hdr.ipv6_320",
+        "label" : "hdr.ipv6.isValid"
+      },
+      {
+        "source" : "hdr.ipv6_320",
+        "target" : "hdr.intermediate_16",
+        "label" : "hdr.intermediate.isValid"
+      },
+      {
+        "source" : "hdr.ipv6_320",
+        "target" : "hdr.tcp_160",
+        "label" : "hdr.tcp.isValid"
+      },
+      {
+        "source" : "hdr.tcp_160",
+        "target" : "<end>",
+        "label" : ""
+      },
+      {
+        "source" : "hdr.ipv6_320",
+        "target" : "<end>",
+        "label" : ""
+      },
+      {
+        "source" : "hdr.udp_64",
+        "target" : "<end>",
+        "label" : ""
+      },
+      {
+        "source" : "hdr.intermediate_16",
+        "target" : "<end>",
+        "label" : ""
+      },
+      {
+        "source" : "hdr.ethernet_112",
+        "target" : "<end>",
+        "label" : ""
+      }
+    ]
+  }
+}

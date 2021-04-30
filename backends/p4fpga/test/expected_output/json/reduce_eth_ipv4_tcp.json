@@ -1,0 +1,59 @@
+{
+  "outputBus" : 64,
+  "parser" : {
+  },
+  "control" : {
+  },
+  "deparser" : {
+    "name" : "MyDeparser",
+    "nodes" : [
+      {
+        "id" : "<start>"
+      },
+      {
+        "id" : "hdr.ethernet_112"
+      },
+      {
+        "id" : "hdr.ipv4_160"
+      },
+      {
+        "id" : "hdr.tcp_160"
+      },
+      {
+        "id" : "<end>"
+      }
+    ],
+    "links" : [
+      {
+        "source" : "<start>",
+        "target" : "hdr.ethernet_112",
+        "label" : ""
+      },
+      {
+        "source" : "hdr.ethernet_112",
+        "target" : "hdr.ipv4_160",
+        "label" : "hdr.ipv4.isValid"
+      },
+      {
+        "source" : "hdr.ipv4_160",
+        "target" : "hdr.tcp_160",
+        "label" : "hdr.tcp.isValid"
+      },
+      {
+        "source" : "hdr.tcp_160",
+        "target" : "<end>",
+        "label" : ""
+      },
+      {
+        "source" : "hdr.ipv4_160",
+        "target" : "<end>",
+        "label" : ""
+      },
+      {
+        "source" : "hdr.ethernet_112",
+        "target" : "<end>",
+        "label" : ""
+      }
+    ]
+  }
+}
