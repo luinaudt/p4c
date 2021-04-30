@@ -40,6 +40,7 @@ class DeparserConverter : public Inspector {
     ordered_set<cstring>*  currentState;
     ordered_set<cstring>*  previousState;
     Util::JsonArray*       links;
+    ordered_set<cstring>*  links_set;
     P4::ReferenceMap*      refMap;
     P4::TypeMap*           typeMap;
 

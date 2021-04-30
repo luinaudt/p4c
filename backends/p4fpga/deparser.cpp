@@ -33,11 +33,16 @@ void DeparserConverter::insertTransition(){
     cstring label = "";
     if (condList->size() > 0){
         label = condList->at(condList->size() - 1);
+        condList->pop_back();
     }
     if (previousState){
         LOG2("inserting links :" << IndentCtl::indent);
         for (auto ps : *previousState){
             for (auto cs : *currentState){
+                auto res = links_set->insert(ps+cs+label);
+                if (!res.second){
+                    continue;
+                }
                 LOG2(ps << " -> " << cs);
                 auto *transition = new Util::JsonObject();
                 transition->emplace("source", ps);
@@ -63,9 +68,7 @@ bool DeparserConverter::preorder(const IR::IfStatement* block){
     LOG2("visiting " << block->condition);
     condList->push_back(block->condition->toString());
     visit(block->ifTrue);
-    condList->pop_back();
     if (block->ifFalse != nullptr){
-        // condList->push_back("!" + block->condition->toString());
         auto stateTrue = currentState;  // save state in True
         currentState = oriState;
         visit(block->ifFalse);
@@ -103,6 +106,7 @@ bool DeparserConverter::preorder(const IR::MethodCallStatement* s){
 
 bool DeparserConverter::preorder(const IR::P4Control* control) {
     links = new Util::JsonArray();
+    links_set = new ordered_set<cstring>();
     state_set = new ordered_set<cstring>();
     condList = new std::vector<cstring>();
     currentState = nullptr;
