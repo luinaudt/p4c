@@ -38,6 +38,14 @@ ValueMapList* ValueMapList::update_hdr_ref(const IR::Parameter* hdrParam){
     return newHdr_vec;
 }
 
+ValueMapList* ValueMapList::remove_duplicate(){
+    ValueMapList* newList = new ValueMapList();
+    for (auto i : *this){
+        newList->push_unique(i);
+    }
+    return newList;
+}
+
 void ValueMapList::merge(ValueMapList* list){
     LOG2("merging list with hdrVec");
     if (this == list) { return; }
@@ -225,6 +233,11 @@ bool DoStaticEvaluation::preorder(const IR::P4Control *block){
         hdr_vecIn = hdr_vec;
     }
     return true;
+}
+
+void DoStaticEvaluation::postorder(const IR::P4Control *block){
+    hdr_vec = hdr_vec->remove_duplicate();
+    LOG1_UNINDENT;
 }
 
 bool DoStaticEvaluation::preorder(const IR::BlockStatement *block){
