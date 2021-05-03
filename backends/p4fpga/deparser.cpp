@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include <cstdint>
+#include <string>
 #include <vector>
 #include "backends/p4fpga/deparser.h"
 #include "ir/indexed_vector.h"
@@ -55,12 +57,14 @@ void DeparserConverter::insertTransition(){
     }
 }
 
-void DeparserConverter::insertState(cstring state){
+void DeparserConverter::insertState(state_t info){
     previousState = currentState;
     currentState = new ordered_set<cstring>();
-    LOG1("inserting state " << state);
-    state_set->insert(state);
-    currentState->insert(state);
+    LOG1("inserting state " << info.name);
+    cstring stateID = info.name + "_" + std::to_string(info.nbBits);
+    stateID += "_" + std::to_string(info.startPos);
+    state_set->insert(stateID);
+    currentState->insert(stateID);
 }
 
 bool DeparserConverter::preorder(const IR::IfStatement* block){
@@ -99,10 +103,13 @@ bool DeparserConverter::preorder(const IR::MethodCallStatement* s){
         auto mc = s->methodCall;
         auto arg = mc->arguments->at(0);
         auto hdrName = arg->toString();
-        auto hdrW = typeMap->getType(arg)->width_bits();
-        cstring stateName = hdrName + "_" + std::to_string(nbEmitBits) + "_" + std::to_string(hdrW);
+        auto hdrW = uint64_t(typeMap->getType(arg)->width_bits());
+        state_t stateParam = {hdrName, hdrW, nbEmitBits};
         nbEmitBits += hdrW;
-        insertState(stateName);
+        cstring stateName = hdrName + "_" + std::to_string(hdrW);
+        stateName += "_" + std::to_string(nbEmitBits);
+        stateName += "_" + std::to_string(nbEmitBits);
+        insertState(stateParam);
         insertTransition();
     }
     return true;
@@ -115,7 +122,7 @@ bool DeparserConverter::preorder(const IR::P4Control* control) {
     condList = new std::vector<cstring>();
     nbEmitBits = 0;
     currentState = nullptr;
-    auto startState = cstring("<start>");
+    state_t startState = {cstring("<start>"), 0, 0};
     insertState(startState);
     return true;
 }
@@ -125,7 +132,7 @@ void DeparserConverter::postorder(const IR::P4Control* control) {
     dep->emplace("name", control->getName());
     Util::JsonArray*  state = new Util::JsonArray();
 // insert end state
-    auto lastState = cstring("<end>");
+    state_t lastState = {cstring("<end>"), 0, nbEmitBits};
     insertState(lastState);
     insertTransition();
     for (auto i : *state_set){

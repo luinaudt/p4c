@@ -33,6 +33,12 @@ limitations under the License.
 namespace FPGA {
 
 class DeparserConverter : public Inspector {
+    typedef struct state{
+        cstring     name;       // hdrName
+        uint64_t    nbBits;      // nbBit to emit
+        uint64_t    startPos;   // position first bit
+    } state_t;
+
     cstring                name;
     uint64_t               nbEmitBits;
     uint64_t               outputBusWidth;
@@ -49,7 +55,7 @@ class DeparserConverter : public Inspector {
 
  protected:
         Util::JsonObject* convertDeparser(const IR::P4Control* ctrl);
-        void insertState(cstring state);
+        void insertState(state_t info);
         void insertTransition();  // links each previous state with each current states
 
  public:
