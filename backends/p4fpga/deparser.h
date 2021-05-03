@@ -16,6 +16,7 @@ limitations under the License.
 #ifndef BACKENDS_P4FPGA_DEPARSER_H_
 #define BACKENDS_P4FPGA_DEPARSER_H_
 
+#include <cstdint>
 #include <vector>
 #include "ir/ir.h"
 #include "ir/vector.h"
@@ -33,14 +34,16 @@ namespace FPGA {
 
 class DeparserConverter : public Inspector {
     cstring                name;
+    uint64_t               nbEmitBits;
+    uint64_t               outputBusWidth;
     P4::P4CoreLibrary&     corelib;
     FPGA::FPGAJson*        json;
     std::vector<cstring>*  condList;  // list of condition
     ordered_set<cstring>*  state_set;  // list of states
     ordered_set<cstring>*  currentState;
     ordered_set<cstring>*  previousState;
-    Util::JsonArray*       links;
     ordered_set<cstring>*  links_set;
+    Util::JsonArray*       links;
     P4::ReferenceMap*      refMap;
     P4::TypeMap*           typeMap;
 
@@ -56,9 +59,10 @@ class DeparserConverter : public Inspector {
         void postorder(const IR::P4Control* ctrl) override;
 
         explicit DeparserConverter(FPGA::FPGAJson* json, P4::ReferenceMap* refMap,
-                                P4::TypeMap* typeMap, cstring name = "deparser")
+                                P4::TypeMap* typeMap, uint64_t outBusWidth,
+                                cstring name = "deparser")
             : name(name), corelib(P4::P4CoreLibrary::instance), json(json),
-            refMap(refMap), typeMap(typeMap) {
+            refMap(refMap), typeMap(typeMap), outputBusWidth(outBusWidth){
             visitDagOnce = false;
             setName("DeparserConverter");
         }

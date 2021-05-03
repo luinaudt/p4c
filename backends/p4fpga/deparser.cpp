@@ -65,13 +65,16 @@ void DeparserConverter::insertState(cstring state){
 
 bool DeparserConverter::preorder(const IR::IfStatement* block){
     auto oriState = currentState;
+    auto prev_emitBits = nbEmitBits;
     LOG2("visiting " << block->condition);
     condList->push_back(block->condition->toString());
     visit(block->ifTrue);
+    nbEmitBits = prev_emitBits;
     if (block->ifFalse != nullptr){
         auto stateTrue = currentState;  // save state in True
         currentState = oriState;
         visit(block->ifFalse);
+        nbEmitBits = prev_emitBits;
         // append state true to false
         for (auto cs : *stateTrue){
             currentState->insert(cs);
@@ -97,7 +100,8 @@ bool DeparserConverter::preorder(const IR::MethodCallStatement* s){
         auto arg = mc->arguments->at(0);
         auto hdrName = arg->toString();
         auto hdrW = typeMap->getType(arg)->width_bits();
-        cstring stateName = hdrName + "_" + std::to_string(hdrW);
+        cstring stateName = hdrName + "_" + std::to_string(nbEmitBits) + "_" + std::to_string(hdrW);
+        nbEmitBits += hdrW;
         insertState(stateName);
         insertTransition();
     }
@@ -109,6 +113,7 @@ bool DeparserConverter::preorder(const IR::P4Control* control) {
     links_set = new ordered_set<cstring>();
     state_set = new ordered_set<cstring>();
     condList = new std::vector<cstring>();
+    nbEmitBits = 0;
     currentState = nullptr;
     auto startState = cstring("<start>");
     insertState(startState);
