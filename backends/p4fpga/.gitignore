@@ -1,3 +1,6 @@
-test/**
+test/*
 !test/samples
 !test/expected_output
+test/expected_output/dots
+\#*\#
+*.*~

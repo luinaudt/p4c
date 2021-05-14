@@ -11,19 +11,52 @@
         "id" : "<start>"
       },
       {
-        "id" : "hdr.ethernet_112"
+        "id" : "hdr.ethernet_0_64"
       },
       {
-        "id" : "hdr.ipv4_160"
+        "id" : "hdr.ethernet_64_48+hdr.ipv4_0_16"
       },
       {
-        "id" : "hdr.tcp_160"
+        "id" : "hdr.ipv4_16_64"
       },
       {
-        "id" : "hdr.udp_64"
+        "id" : "hdr.ipv4_80_64"
       },
       {
-        "id" : "hdr.ipv6_320"
+        "id" : "hdr.ipv4_144_16+hdr.tcp_0_48"
+      },
+      {
+        "id" : "hdr.tcp_48_64"
+      },
+      {
+        "id" : "hdr.ipv4_144_16+hdr.udp_0_48"
+      },
+      {
+        "id" : "hdr.ethernet_64_48+hdr.ipv6_0_16"
+      },
+      {
+        "id" : "hdr.ipv6_16_64"
+      },
+      {
+        "id" : "hdr.ipv6_80_64"
+      },
+      {
+        "id" : "hdr.ipv6_144_64"
+      },
+      {
+        "id" : "hdr.ipv6_208_64"
+      },
+      {
+        "id" : "hdr.ipv6_272_48+hdr.tcp_0_16"
+      },
+      {
+        "id" : "hdr.tcp_16_64"
+      },
+      {
+        "id" : "hdr.tcp_80_64"
+      },
+      {
+        "id" : "hdr.ipv6_272_48+hdr.udp_0_16"
       },
       {
         "id" : "<end>"
@@ -32,61 +65,116 @@
     "links" : [
       {
         "source" : "<start>",
-        "target" : "hdr.ethernet_112",
+        "target" : "hdr.ethernet_0_64",
         "label" : ""
       },
       {
-        "source" : "hdr.ethernet_112",
-        "target" : "hdr.ipv4_160",
+        "source" : "hdr.ethernet_0_64",
+        "target" : "hdr.ethernet_64_48+hdr.ipv4_0_16",
         "label" : "hdr.ipv4.isValid"
       },
       {
-        "source" : "hdr.ipv4_160",
-        "target" : "hdr.tcp_160",
+        "source" : "hdr.ethernet_64_48+hdr.ipv4_0_16",
+        "target" : "hdr.ipv4_16_64",
+        "label" : ""
+      },
+      {
+        "source" : "hdr.ipv4_16_64",
+        "target" : "hdr.ipv4_80_64",
+        "label" : ""
+      },
+      {
+        "source" : "hdr.ipv4_80_64",
+        "target" : "hdr.ipv4_144_16+hdr.tcp_0_48",
         "label" : "hdr.tcp.isValid"
       },
       {
-        "source" : "hdr.ipv4_160",
-        "target" : "hdr.udp_64",
+        "source" : "hdr.ipv4_144_16+hdr.tcp_0_48",
+        "target" : "hdr.tcp_48_64",
+        "label" : ""
+      },
+      {
+        "source" : "hdr.ipv4_80_64",
+        "target" : "hdr.ipv4_144_16+hdr.udp_0_48",
         "label" : "hdr.udp.isValid"
       },
       {
-        "source" : "hdr.ethernet_112",
-        "target" : "hdr.ipv6_320",
+        "source" : "hdr.ethernet_0_64",
+        "target" : "hdr.ethernet_64_48+hdr.ipv6_0_16",
         "label" : "hdr.ipv6.isValid"
       },
       {
-        "source" : "hdr.ipv6_320",
-        "target" : "hdr.tcp_160",
+        "source" : "hdr.ethernet_64_48+hdr.ipv6_0_16",
+        "target" : "hdr.ipv6_16_64",
+        "label" : ""
+      },
+      {
+        "source" : "hdr.ipv6_16_64",
+        "target" : "hdr.ipv6_80_64",
+        "label" : ""
+      },
+      {
+        "source" : "hdr.ipv6_80_64",
+        "target" : "hdr.ipv6_144_64",
+        "label" : ""
+      },
+      {
+        "source" : "hdr.ipv6_144_64",
+        "target" : "hdr.ipv6_208_64",
+        "label" : ""
+      },
+      {
+        "source" : "hdr.ipv6_208_64",
+        "target" : "hdr.ipv6_272_48+hdr.tcp_0_16",
         "label" : "hdr.tcp.isValid"
       },
       {
-        "source" : "hdr.ipv6_320",
-        "target" : "hdr.udp_64",
+        "source" : "hdr.ipv6_272_48+hdr.tcp_0_16",
+        "target" : "hdr.tcp_16_64",
+        "label" : ""
+      },
+      {
+        "source" : "hdr.tcp_16_64",
+        "target" : "hdr.tcp_80_64",
+        "label" : ""
+      },
+      {
+        "source" : "hdr.ipv6_208_64",
+        "target" : "hdr.ipv6_272_48+hdr.udp_0_16",
         "label" : "hdr.udp.isValid"
       },
       {
-        "source" : "hdr.udp_64",
+        "source" : "hdr.ipv6_272_48+hdr.udp_0_16",
         "target" : "<end>",
         "label" : ""
       },
       {
-        "source" : "hdr.ipv6_320",
+        "source" : "hdr.ipv6_208_64",
         "target" : "<end>",
         "label" : ""
       },
       {
-        "source" : "hdr.tcp_160",
+        "source" : "hdr.tcp_80_64",
         "target" : "<end>",
         "label" : ""
       },
       {
-        "source" : "hdr.ethernet_112",
+        "source" : "hdr.ethernet_0_64",
         "target" : "<end>",
         "label" : ""
       },
       {
-        "source" : "hdr.ipv4_160",
+        "source" : "hdr.ipv4_144_16+hdr.udp_0_48",
+        "target" : "<end>",
+        "label" : ""
+      },
+      {
+        "source" : "hdr.ipv4_80_64",
+        "target" : "<end>",
+        "label" : ""
+      },
+      {
+        "source" : "hdr.tcp_48_64",
         "target" : "<end>",
         "label" : ""
       }
