@@ -16,7 +16,9 @@ limitations under the License.
 #ifndef BACKENDS_P4FPGA_DEPARSER_H_
 #define BACKENDS_P4FPGA_DEPARSER_H_
 
+#include <cstddef>
 #include <cstdint>
+#include <utility>
 #include <vector>
 #include "ir/ir.h"
 #include "ir/vector.h"
@@ -32,13 +34,29 @@ limitations under the License.
 
 namespace FPGA {
 
-class DeparserConverter : public Inspector {
-    typedef struct state{
-        cstring     name;       // hdrName
-        uint64_t    nbBits;      // nbBit to emit
-        uint64_t    startPos;   // position first bit
-    } state_t;
+/**
+Class for information about the output bus
+*/
+class emitState {
+    typedef std::pair<uint64_t, uint64_t> bitPosLen_t;
+    typedef std::pair<cstring,  bitPosLen_t> bitInfo_t;
+    uint64_t pos;  // pos in bus
+    uint64_t width;
+ public:
+    std::vector<bitInfo_t*> bitMap;  // association between bit pos and bit hdr
+    explicit emitState(uint64_t width) : pos(0), width(width){
+        bitMap = std::vector<bitInfo_t*>();
+    };
+    uint64_t remainingBits(){return width - pos;}  // indicate remaning bits output bus
+    /**
+    \return Positive : remaining bits on bus, negative : remaining bits in hdr
+    */
+    int64_t insertHdr(cstring hdrName, uint64_t posInHdr, uint64_t nbBitsToInsert);
+    emitState* clone();
+    cstring getStateName();  // return state name
+};
 
+class DeparserConverter : public Inspector {
     cstring                name;
     uint64_t               nbEmitBits;
     uint64_t               outputBusWidth;
@@ -52,10 +70,11 @@ class DeparserConverter : public Inspector {
     Util::JsonArray*       links;
     P4::ReferenceMap*      refMap;
     P4::TypeMap*           typeMap;
-
+    emitState* state;  // = new emitState(outputBusWidth);
  protected:
         Util::JsonObject* convertDeparser(const IR::P4Control* ctrl);
-        void insertState(state_t info);
+        void insertState(emitState* info);
+        void insertState(cstring info);
         void insertTransition();  // links each previous state with each current states
 
  public:
@@ -70,6 +89,7 @@ class DeparserConverter : public Inspector {
             : name(name), corelib(P4::P4CoreLibrary::instance), json(json),
             refMap(refMap), typeMap(typeMap), outputBusWidth(outBusWidth){
             visitDagOnce = false;
+            state = new emitState(outputBusWidth);
             setName("DeparserConverter");
         }
 };

@@ -15,6 +15,7 @@ limitations under the License.
 */
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 #include "backends/p4fpga/deparser.h"
 #include "ir/indexed_vector.h"
@@ -22,6 +23,7 @@ limitations under the License.
 #include "ir/vector.h"
 #include "frontends/p4/methodInstance.h"
 #include "lib/cstring.h"
+#include "lib/error_catalog.h"
 #include "lib/indent.h"
 #include "lib/json.h"
 #include "lib/log.h"
@@ -31,6 +33,43 @@ limitations under the License.
 
 namespace FPGA {
 
+// state
+cstring emitState::getStateName(){
+    cstring name = "";
+    if (bitMap.size() == 0){
+        return name;
+    }
+    name += bitMap[0]->first+"_";
+    name += std::to_string(bitMap[0]->second.first);
+    name += "_" + std::to_string(bitMap[0]->second.second);
+    for (uint32_t i = 1; i < bitMap.size(); ++i) {
+        name += "+";
+        name += bitMap[i]->first + "_";
+        name += std::to_string(bitMap[i]->second.first);
+        name += "_" + std::to_string(bitMap[i]->second.second);
+    }
+    return name;
+}
+
+emitState* emitState::clone(){
+    auto newEmit = new emitState(width);
+    newEmit->bitMap = std::vector<bitInfo_t*>(bitMap);
+    newEmit->pos = pos;
+    return newEmit;
+}
+int64_t emitState::insertHdr(cstring hdrName, uint64_t posInHdr, uint64_t nbBitsToInsert){
+    uint64_t insertBits = width - pos;
+    if (nbBitsToInsert < insertBits) {
+        insertBits = nbBitsToInsert;
+    }
+    bitInfo_t* newHdr = new bitInfo_t(hdrName, bitPosLen_t(posInHdr, insertBits));
+    bitMap.push_back(newHdr);
+    pos += insertBits;
+    return (pos == width) ? nbBitsToInsert - insertBits : pos - width;
+}
+
+
+// deparser converter
 void DeparserConverter::insertTransition(){
     cstring label = "";
     if (condList->size() > 0){
@@ -56,24 +95,28 @@ void DeparserConverter::insertTransition(){
         LOG2_UNINDENT;
     }
 }
-
-void DeparserConverter::insertState(state_t info){
+void DeparserConverter::insertState(cstring info){
     previousState = currentState;
     currentState = new ordered_set<cstring>();
-    LOG1("inserting state " << info.name);
-    cstring stateID = info.name + "_" + std::to_string(info.nbBits);
-    stateID += "_" + std::to_string(info.startPos);
-    state_set->insert(stateID);
-    currentState->insert(stateID);
+    LOG1("inserting state " << info);
+    state_set->insert(info);
+    currentState->insert(info);
+}
+
+void DeparserConverter::insertState(emitState* info){
+    cstring stateID = info->getStateName();
+    insertState(stateID);
 }
 
 bool DeparserConverter::preorder(const IR::IfStatement* block){
+    auto oriEmitState = state->clone();
     auto oriState = currentState;
     auto prev_emitBits = nbEmitBits;
     LOG2("visiting " << block->condition);
     condList->push_back(block->condition->toString());
     visit(block->ifTrue);
     nbEmitBits = prev_emitBits;
+    state = oriEmitState;
     if (block->ifFalse != nullptr){
         auto stateTrue = currentState;  // save state in True
         currentState = oriState;
@@ -103,14 +146,26 @@ bool DeparserConverter::preorder(const IR::MethodCallStatement* s){
         auto mc = s->methodCall;
         auto arg = mc->arguments->at(0);
         auto hdrName = arg->toString();
-        auto hdrW = uint64_t(typeMap->getType(arg)->width_bits());
-        state_t stateParam = {hdrName, hdrW, nbEmitBits};
-        nbEmitBits += hdrW;
-        cstring stateName = hdrName + "_" + std::to_string(hdrW);
-        stateName += "_" + std::to_string(nbEmitBits);
-        stateName += "_" + std::to_string(nbEmitBits);
-        insertState(stateParam);
-        insertTransition();
+        auto hdrW = uint32_t(typeMap->getType(arg)->width_bits());
+        LOG1("emitting " << hdrW << " bits for hdr " << hdrName);
+        // inserting for all possible positions
+        int64_t remain = hdrW;
+        remain = state->insertHdr(hdrName, 0, remain);
+        uint64_t hdrPos = hdrW - remain;  // move from remaining bits
+        while (remain > 0) {
+            insertState(state);
+            insertTransition();
+            state = new emitState(outputBusWidth);
+            remain = state->insertHdr(hdrName, hdrPos, remain);
+            hdrPos += outputBusWidth;
+        };
+        if (remain == 0){
+            insertState(state);
+            insertTransition();
+            state = new emitState(outputBusWidth);
+        }else{
+            LOG1("remaining " << remain << " bits for hdr " << hdrName);
+        }
     }
     return true;
 }
@@ -120,10 +175,8 @@ bool DeparserConverter::preorder(const IR::P4Control* control) {
     links_set = new ordered_set<cstring>();
     state_set = new ordered_set<cstring>();
     condList = new std::vector<cstring>();
-    nbEmitBits = 0;
     currentState = nullptr;
-    state_t startState = {cstring("<start>"), 0, 0};
-    insertState(startState);
+    insertState(cstring("<start>"));
     return true;
 }
 
@@ -132,8 +185,7 @@ void DeparserConverter::postorder(const IR::P4Control* control) {
     dep->emplace("name", control->getName());
     Util::JsonArray*  state = new Util::JsonArray();
 // insert end state
-    state_t lastState = {cstring("<end>"), 0, nbEmitBits};
-    insertState(lastState);
+    insertState(cstring("<end>"));
     insertTransition();
     for (auto i : *state_set){
         Util::JsonObject* tmp = new Util::JsonObject();
