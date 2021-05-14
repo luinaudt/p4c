@@ -70,7 +70,8 @@ class DeparserConverter : public Inspector {
     Util::JsonArray*       links;
     P4::ReferenceMap*      refMap;
     P4::TypeMap*           typeMap;
-    emitState* state;  // = new emitState(outputBusWidth);
+    emitState* state;
+    bool splitStates;
  protected:
         Util::JsonObject* convertDeparser(const IR::P4Control* ctrl);
         void insertState(emitState* info);
@@ -85,9 +86,9 @@ class DeparserConverter : public Inspector {
 
         explicit DeparserConverter(FPGA::FPGAJson* json, P4::ReferenceMap* refMap,
                                 P4::TypeMap* typeMap, uint64_t outBusWidth,
-                                cstring name = "deparser")
-            : name(name), corelib(P4::P4CoreLibrary::instance), json(json),
-            refMap(refMap), typeMap(typeMap), outputBusWidth(outBusWidth){
+                                cstring name = "deparser", bool splitStates=true)
+            : name(name), outputBusWidth(outBusWidth), corelib(P4::P4CoreLibrary::instance),
+            json(json), refMap(refMap), typeMap(typeMap), splitStates(splitStates){
             visitDagOnce = false;
             state = new emitState(outputBusWidth);
             setName("DeparserConverter");

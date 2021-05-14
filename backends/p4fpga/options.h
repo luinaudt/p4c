@@ -24,6 +24,7 @@ namespace FPGA{
 class P4FpgaOptions : public CompilerOptions {
  public:
     bool parseOnly = false;
+    bool splitDeparser = true;
     cstring outputFile = "a.out";
     unsigned outBusWidth = 64;
     P4FpgaOptions() {
@@ -37,6 +38,9 @@ class P4FpgaOptions : public CompilerOptions {
                            parseOnly = true;
                            return true; },
                        "only parse the P4 input, without any further processing");
+        registerOption("--deparser-nosplit", nullptr,
+                [this](const char*) { splitDeparser=false; return true; },
+                "avoid state split in deparser, simpler graph");
         registerOption("-o", "outfile",
                 [this](const char* arg) { outputFile = arg; return true; },
                 "Write output to outfile");

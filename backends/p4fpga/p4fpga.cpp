@@ -46,7 +46,8 @@ void FPGABackend::convert(const IR::P4Program *&program){
     auto depType = deparser->expression->type->getP4Type();
 
     if (!main) return;
-    auto depConv = new DeparserConverter(json, refMap, typeMap, options.outBusWidth);
+    auto depConv = new DeparserConverter(json, refMap, typeMap, options.outBusWidth,
+                                        "deparser", options.splitDeparser);
     LOG2(deparser);
     int pos=0;
     for (auto i : program->objects) {

@@ -149,6 +149,9 @@ bool DeparserConverter::preorder(const IR::MethodCallStatement* s){
         auto hdrW = uint32_t(typeMap->getType(arg)->width_bits());
         LOG1("emitting " << hdrW << " bits for hdr " << hdrName);
         // inserting for all possible positions
+        if (splitStates==false) {
+            state = new emitState(hdrW);
+        }
         int64_t remain = hdrW;
         remain = state->insertHdr(hdrName, 0, remain);
         uint64_t hdrPos = hdrW - remain;  // move from remaining bits
