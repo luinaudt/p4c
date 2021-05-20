@@ -17,6 +17,10 @@ class deparserStateMachines(object):
             "headerName" : 'HdrName',
             "headerPosition" : 'HdrPos', 
             "emitWidth" : 'HdrLen'}
+        # edges structure
+        self.edgesStructure = {
+            "condition" : 'condition',
+            "priority" : 'priority'}
         self.depG = nx.readwrite.json_graph.node_link_graph(
                                 deparser["graph"], directed=True)
         self.headers = deparser["PHV"]
