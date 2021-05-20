@@ -97,6 +97,7 @@ void DeparserConverter::insertTransition(){
                 transition->emplace("target", cs);
                 transition->emplace("label", label + cond);
                 transition->emplace("priority", priority);
+                transition->emplace("condition", cond);
                 links->append(transition);
             }
         }

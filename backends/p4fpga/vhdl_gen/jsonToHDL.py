@@ -26,6 +26,7 @@ class deparserStateMachines(object):
         self.headers = deparser["PHV"]
         self.init =  deparser["startState"]
         self.last = deparser["lastState"]
+        self.name = deparser["name"]
         self.busSize = busSize
         self.nbStateMachine = int(busSize/8)
         self.stateMachines = []
@@ -61,6 +62,7 @@ class deparserStateMachines(object):
                                             pos=(i*8, (i+1)*8-1))
             if i < len(self.stateMachines):
                 newInfo = self.depG.edges[edge]
+                newInfo[self.edgesStructure["condition"]] = h # currently one header only
                 self.stateMachines[st].add_edge(prev_hdr[st],
                                                 new_node,
                                                 **newInfo)
@@ -90,11 +92,12 @@ class deparserStateMachines(object):
             for i, m in enumerate(self.stateMachines):
                 newInfo = self.depG.edges[edge]
                 m.add_edge(prev_hdr[i], edge[1], **newInfo)
+        for i in self.stateMachines[0].edges:
+            print(self.stateMachines[0].edges[i])
 
     def exportToDot(self, folder, basename="state_machine"):
         """ export all states machines to dot file
         """
-
         for i, st in enumerate(self.getStateMachines()):
             outFile = path.join(folder, f"{basename}_{i}.dot")
             nx.nx_pydot.write_dot(st, outFile)
@@ -106,8 +109,8 @@ class deparserStateMachines(object):
             tmp = nx.nx_pydot.to_pydot(st)
             tmp.write_png(path.join(folder, f"{basename}_{i}.png"))
 
-    def exportToVHDL(self, outputFolder, baseName, phvBus):
-        return exportDeparserToVHDL(self, outputFolder, phvBus, baseName)
+    def exportToVHDL(self, outputFolder, phvBus):
+        return exportDeparserToVHDL(self, outputFolder, phvBus, self.name)
 
     def printStPathsCount(self):
         for i, st in enumerate(self.getStateMachines()):

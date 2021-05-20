@@ -5,12 +5,39 @@ import os
 import argparse
 import json
 
-def comp(deparserJson, outputFolder, busWidth=64):
-    deparserSplit = deparserStateMachines(deparserJson, busWidth)
-    deparserSplit.exportToDot(outputFolder)
-    deparserSplit.exportToPng(outputFolder)
 
-    
+def genPHVInfo(phv, baseName='phv_'):
+    headAssoc = {} # data hdr bus
+    valAssoc = {} # validity bit
+    phvWidth = 0
+    i = 0
+    for n, w in phv.items():
+        headAssoc[n] = (phvWidth, phvWidth + w - 1)
+        phvWidth += w
+        valAssoc[n] = i
+        i += 1
+    headAssoc = (headAssoc, phvWidth)
+    valAssoc = (valAssoc, i)
+    info = [{"name": "{}bus".format(baseName),
+            "width": headAssoc[1],
+            "data": headAssoc[0]},
+            {"name": "{}val".format(baseName),
+            "width": valAssoc[1],
+            "data": valAssoc[0]}]
+    return info
+
+
+
+def DeparserComp(deparser, outputFolder, busWidth=64):
+    deparserSplit = deparserStateMachines(deparser, busWidth)
+    outputImgFold = os.path.join(outputFolder, "img")
+    if not os.path.exists(outputImgFold):
+            os.mkdir(outputImgFold)
+    deparserSplit.exportToDot(outputImgFold)
+    deparserSplit.exportToPng(outputImgFold)
+    phvBus = genPHVInfo(deparser["PHV"])
+    print(phvBus)
+    deparserSplit.exportToVHDL(outputFolder, phvBus)
 
 
 def main(argv):
@@ -26,18 +53,15 @@ def main(argv):
         sys.exit(1)
 
     jsonFile = jsonNames[0] # only one json accepted currently
-    P4Program = None
+    P4Json = None
     with open(jsonFile,'r') as f:
-        P4Program = json.loads(f.read())
-
-
-    deparser = P4Program[args.deparserName]
-    busWidth = P4Program["outputBus"] # name might have to be configurable
+        P4Json = json.loads(f.read())
     
+    deparser=P4Json[args.deparserName]
     output = os.path.join(os.getcwd(), args.output)
     if not os.path.exists(output):
         os.mkdir(output)
-    comp(deparser, output, busWidth)
+    DeparserComp(deparser, output, P4Json["outputBus"])
 
 
 if __name__ == "__main__":

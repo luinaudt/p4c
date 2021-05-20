@@ -62,6 +62,7 @@ struct headers {
     ipv4_t              ipv4;
     ipv6_h              ipv6;
     udp_h               udp;
+    udp_h               udp2;
     tcp_h               tcp;
 }
 
@@ -99,6 +100,7 @@ parser MyParser(packet_in pkt,
     }
     state parse_udp {
         pkt.extract(hdr.udp);
+	pkt.extract(hdr.udp2);
         transition accept;
     }
     state parse_tcp {
@@ -139,6 +141,7 @@ control MyDeparser(packet_out pkt, in headers hdr) {
 	pkt.emit(hdr.ipv6);
 	pkt.emit(hdr.tcp);
 	pkt.emit(hdr.udp);
+	pkt.emit(hdr.udp2);
     }
 }
 
