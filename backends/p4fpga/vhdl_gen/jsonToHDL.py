@@ -44,36 +44,48 @@ class deparserStateMachines(object):
             raise ValueError("No header")
         return stateHdr[0]
 
+    def splitState(self,h, edge, prev_hdr):
+        """ split a state
+        h is a header which must exist in self.headers
+        edge must be a tuple representing an edge of self.depG
+        """
+        st = 0
+        for i in range(int(self.headers[h]/8)):
+            new_node = "{}_{}".format(h, i*8)
+            self.stateMachines[st].add_node(new_node,
+                                            header=h,
+                                            pos=(i*8, (i+1)*8-1))
+            if i < len(self.stateMachines):
+                newInfo = self.depG.edges[edge]
+                self.stateMachines[st].add_edge(prev_hdr[st],
+                                                new_node,
+                                                **newInfo)
+            else:
+                self.stateMachines[st].add_edge(prev_hdr[st],
+                                                new_node)
+            prev_hdr[st] = new_node
+            st = (st + 1) % len(self.stateMachines)
+
     def genStateMachines(self):
         paths = nx.all_simple_paths(self.depG, self.init, self.last)
         paths2 = nx.all_simple_edge_paths(self.depG, self.init, self.last)
+        prev_hdr = [None] * self.nbStateMachine
         for n, p in enumerate(paths2):
             if n % 1000 == 999:
                 print("gen stateMachine path: {}".format(n))
-            st = 0
-            prev_hdr = []
-            for i in self.stateMachines:
-                prev_hdr.append(p[0][0])
-            #print(p)
+            for i in range(len(prev_hdr)):
+                prev_hdr[i] = p[0][0]
+
             for edge in p:
                 h = self._getHdrName(edge[1])
-                for i in range(int(self.headers[h]/8)):
-                    new_node = "{}_{}".format(h, i*8)
-                    self.stateMachines[st].add_node(new_node,
-                                                    header=h,
-                                                    pos=(i*8, (i+1)*8-1))
-                    if i < len(self.stateMachines):
-                        self.stateMachines[st].add_edge(prev_hdr[st],
-                                                        new_node,
-                                                        label=h)
-                    else:
-                        self.stateMachines[st].add_edge(prev_hdr[st],
-                                                        new_node)
-                    prev_hdr[st] = new_node
-                    st = (st + 1) % len(self.stateMachines)
+                if h in self.headers: # we emit an header
+                    self.splitState(h, edge, prev_hdr)
+
             #we connect last state
+            edge = p[-1]
             for i, m in enumerate(self.stateMachines):
-                m.add_edge(prev_hdr[i], p[-1][1])
+                newInfo = self.depG.edges[edge]
+                m.add_edge(prev_hdr[i], edge[1], **newInfo)
 
     def exportToDot(self, folder, basename="state_machine"):
         """ export all states machines to dot file
