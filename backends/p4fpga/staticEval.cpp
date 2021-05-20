@@ -220,7 +220,7 @@ bool DoStaticEvaluation::preorder(const IR::P4Control *block){
                 "%1%: param is not a struct", paramType);
     }
     if (hdrIn->direction == IR::Direction::In){
-        LOG1("Read only Headers");
+        LOG1("Read only Headers, no change in hdr status");
         LOG1_UNINDENT;
         return false;
     }
