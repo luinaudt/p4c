@@ -1,3 +1,5 @@
+vhdl_gen/*/
+
 test/*
 !test/samples
 !test/expected_output
