@@ -369,8 +369,6 @@ class deparserHDL(object):
                 condTmpl = "headerValid({}) = '1' then \n {} \n"
                 tmp = transitionTmpl.format(name)
                 if condName in cond and cond[condName] is not None:
-                    print("genstate ", busAssoc)
-                    print(cond)
                     tmp = condTmpl.format(busAssoc[cond[condName]],
                                           tmp)
                 return tmp, ("label" in cond)

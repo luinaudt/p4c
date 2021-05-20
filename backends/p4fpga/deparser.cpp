@@ -74,9 +74,8 @@ int64_t emitState::insertHdr(cstring hdrName, uint64_t posInHdr, uint64_t nbBits
 // deparser converter
 void DeparserConverter::insertTransition(){
     cstring label = std::to_string(priority);
-    cstring cond = nullptr;
+    cstring cond = "";
     if (condList->size() > 0){
-        cond = "";
         label += " : ";
         for (auto i : *condList) {
             cond += i;
@@ -89,17 +88,17 @@ void DeparserConverter::insertTransition(){
         LOG2("inserting links :" << IndentCtl::indent);
         for (auto ps : *previousState){
             for (auto cs : *currentState){
-                auto res = links_set->insert(ps+cs+cond);
+                auto res = links_set->insert(ps+cs+label);
                 if (!res.second){
                     continue;
                 }
-                LOG2(ps << " -> " << cs);
+                LOG2(ps << " -> " << cs << " " << cond);
                 auto *transition = new Util::JsonObject();
                 transition->emplace("source", ps);
                 transition->emplace("target", cs);
-                transition->emplace("condition", cond);
                 transition->emplace("label", label);
                 transition->emplace("priority", priority);
+                (cond != "") ? transition->emplace("condition", cond) : nullptr;
                 links->append(transition);
             }
         }
