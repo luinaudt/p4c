@@ -249,8 +249,10 @@ void DeparserConverter::postorder(const IR::P4Control* control) {
     priority++;
     insertState(cstring("<end>"));
     insertTransition();
-    dep->emplace("nodes", statesList);
-    dep->emplace("links", links);
+    auto depGraph = new Util::JsonObject();
+    depGraph->emplace("nodes", statesList);
+    depGraph->emplace("links", links);
+    dep->emplace("graph", depGraph);
     json->setDeparser(dep);
 }
 

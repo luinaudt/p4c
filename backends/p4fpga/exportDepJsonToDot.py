@@ -46,7 +46,7 @@ def convertFile(inputFile, outputFile, deparserName):
     print("processing {}".format(inputFile))
     with open(inputFile,'r') as f:
         deparser = json.load(f)[deparserName]
-    graph = networkx.readwrite.json_graph.node_link_graph(deparser, directed=True)
+    graph = networkx.readwrite.json_graph.node_link_graph(deparser["graph"], directed=True)
     networkx.drawing.nx_agraph.write_dot(graph, outputFile)
 
 def convert(fileName = "a.out", outfileName= "a.dot", deparserName = "deparser"):
