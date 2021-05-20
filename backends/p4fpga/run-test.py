@@ -51,7 +51,7 @@ def mkOutputDir(dir, jsonFolder, p4Folder):
     if not os.path.exists(os.path.join(dir, p4Folder)):
         os.mkdir(os.path.join(dir, p4Folder))
 
-def process(args):
+def process(args, otherArgs):
     # command example : ./p4c/p4fpga --top4 Last,FPGABackend --dump . -o test_new.json src/testComp/t0.p4
     commands = []
     for i in os.listdir(os.path.join(args.inputFolder)):
@@ -63,8 +63,9 @@ def process(args):
         cmdArgs = [args.compiler, 
                    "-o", str(jsonOutFile), 
                    "--dump", str(dumpFolder),
-                   "--top4", ",".join(args.passToDump),
-                   os.path.join(args.inputFolder, i)]
+                   "--top4", ",".join(args.passToDump)]
+        cmdArgs.extend(otherArgs)
+        cmdArgs.append(os.path.join(args.inputFolder, i))
         commands.append(cmdArgs)
 
     launchCompilation(commands, args.nbThreads)
@@ -106,7 +107,8 @@ def main(argv):
     parser.add_argument("--compiler", help="compiler executable", required=True)
     parser.add_argument("--nbThreads", help="number of parallel compilation",type=int, default=1, required=False)
     parser.add_argument("--passToDump", help="pass to dump", nargs='+', default=["Last","Backend"], required=False)
-    args = parser.parse_args()
+    args, otherArgs = parser.parse_known_args()
+    #args = parser.parse_args()
     error = False
     if not os.path.exists(args.inputFolder):
         print("input programs : {} does not exists".format(args.inputFolder))
@@ -124,7 +126,7 @@ def main(argv):
         error = True
     if error: exit(1)
     mkOutputDir(args.outputTest, JSONFOLDER, P4FOLDER)
-    process(args)
+    process(args, otherArgs)
     
     
 if __name__ == "__main__":
