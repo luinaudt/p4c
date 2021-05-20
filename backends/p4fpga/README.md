@@ -1,3 +1,8 @@
-# P4test Backend
+# P4fpga Backend
+This is backend for fpga targets.
 
-This is a "fake" backend, whose sole purpose is to test the P4-16 front-end.
+Currently only support deparser code generation
+
+# requirements :
+python3
+pip install networkx colorama

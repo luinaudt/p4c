@@ -215,21 +215,17 @@ bool DeparserConverter::preorder(const IR::MethodCallStatement* s){
 }
 
 bool DeparserConverter::preorder(const IR::P4Control* control) {
+    // init deparser info (case object is reused)
+    deparserJson = new Util::JsonObject();
+    cstring startState = cstring("<start>");
     links = new Util::JsonArray();
     statesList = new Util::JsonArray();
     links_set = new ordered_set<cstring>();
     state_set = new ordered_set<cstring>();
     condList = new std::vector<cstring>();
-    currentState = nullptr;
-    priority = 0;
-    insertState(cstring("<start>"));
-    return true;
-}
-
-void DeparserConverter::postorder(const IR::P4Control* control) {
-    Util::JsonObject* dep = new Util::JsonObject();
-    dep->emplace("name", control->getName());
+    // json init
     Util::JsonObject* phv = new Util::JsonObject();
+    deparserJson->emplace("name", control->getName());
     auto hdrIn = control->getApplyParameters()->parameters.at(1);
     auto hdrType = typeMap->getType(hdrIn);
     if (hdrType->is<IR::Type_Struct>()) {
@@ -244,16 +240,27 @@ void DeparserConverter::postorder(const IR::P4Control* control) {
             phv->emplace(i->toString(), uint32_t(ht->width_bits()));
         }
     }
-    dep->emplace("PHV", phv);
+    deparserJson->emplace("PHV", phv);
+    deparserJson->emplace("startState", startState);
+    // state machine setupe
+    currentState = nullptr;
+    priority = 0;
+    insertState(startState);
+    return true;
+}
+
+void DeparserConverter::postorder(const IR::P4Control* control) {
+    cstring endState = cstring("<end>");
+    deparserJson->emplace("lastState", endState);
 // insert end state
     priority++;
-    insertState(cstring("<end>"));
+    insertState(endState);
     insertTransition();
     auto depGraph = new Util::JsonObject();
     depGraph->emplace("nodes", statesList);
     depGraph->emplace("links", links);
-    dep->emplace("graph", depGraph);
-    json->setDeparser(dep);
+    deparserJson->emplace("graph", depGraph);
+    json->setDeparser(deparserJson);
 }
 
 }  // namespace FPGA

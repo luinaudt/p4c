@@ -57,6 +57,7 @@ class emitState {
 };
 
 class DeparserConverter : public Inspector {
+    Util::JsonObject*      deparserJson;  // json of deparser
     cstring                name;
     uint64_t               nbEmitBits;
     uint64_t               outputBusWidth;
