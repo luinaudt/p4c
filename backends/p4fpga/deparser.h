@@ -60,6 +60,7 @@ class DeparserConverter : public Inspector {
     cstring                name;
     uint64_t               nbEmitBits;
     uint64_t               outputBusWidth;
+    uint64_t               priority;
     P4::P4CoreLibrary&     corelib;
     FPGA::FPGAJson*        json;
     std::vector<cstring>*  condList;  // list of condition
@@ -68,10 +69,13 @@ class DeparserConverter : public Inspector {
     ordered_set<cstring>*  previousState;
     ordered_set<cstring>*  links_set;
     Util::JsonArray*       links;
+    Util::JsonArray*       statesList;
+
     P4::ReferenceMap*      refMap;
     P4::TypeMap*           typeMap;
     emitState* state;
     bool splitStates;
+
  protected:
         Util::JsonObject* convertDeparser(const IR::P4Control* ctrl);
         void insertState(emitState* info);
@@ -79,11 +83,11 @@ class DeparserConverter : public Inspector {
         void insertTransition();  // links each previous state with each current states
 
  public:
+        cstring headerName(const IR::Member *expression);
         bool preorder(const IR::P4Control* ctrl) override;
         bool preorder(const IR::IfStatement* cond) override;
         bool preorder(const IR::MethodCallStatement* s) override;
         void postorder(const IR::P4Control* ctrl) override;
-
         explicit DeparserConverter(FPGA::FPGAJson* json, P4::ReferenceMap* refMap,
                                 P4::TypeMap* typeMap, uint64_t outBusWidth,
                                 cstring name = "deparser", bool splitStates=true)

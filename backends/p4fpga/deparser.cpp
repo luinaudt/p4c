@@ -23,10 +23,12 @@ limitations under the License.
 #include "ir/vector.h"
 #include "frontends/p4/methodInstance.h"
 #include "lib/cstring.h"
+#include "lib/error.h"
 #include "lib/error_catalog.h"
 #include "lib/indent.h"
 #include "lib/json.h"
 #include "lib/log.h"
+#include "lib/null.h"
 #include "lib/ordered_set.h"
 #include "p4/methodInstance.h"
 #include "p4fpga/JsonObjects.h"
@@ -71,16 +73,21 @@ int64_t emitState::insertHdr(cstring hdrName, uint64_t posInHdr, uint64_t nbBits
 
 // deparser converter
 void DeparserConverter::insertTransition(){
-    cstring label = "";
+    cstring label = std::to_string(priority);
+    cstring cond = "";
     if (condList->size() > 0){
-        label = condList->at(condList->size() - 1);
+        label += " : ";
+        for (auto i : *condList) {
+            cond += i;
+        }
         condList->pop_back();
+        condList = new std::vector<cstring>();
     }
     if (previousState){
         LOG2("inserting links :" << IndentCtl::indent);
         for (auto ps : *previousState){
             for (auto cs : *currentState){
-                auto res = links_set->insert(ps+cs+label);
+                auto res = links_set->insert(ps+cs+cond);
                 if (!res.second){
                     continue;
                 }
@@ -88,7 +95,8 @@ void DeparserConverter::insertTransition(){
                 auto *transition = new Util::JsonObject();
                 transition->emplace("source", ps);
                 transition->emplace("target", cs);
-                transition->emplace("label", label);
+                transition->emplace("label", label + cond);
+                transition->emplace("priority", priority);
                 links->append(transition);
             }
         }
@@ -99,13 +107,36 @@ void DeparserConverter::insertState(cstring info){
     previousState = currentState;
     currentState = new ordered_set<cstring>();
     LOG1("inserting state " << info);
-    state_set->insert(info);
+    if (state_set->insert(info).second){
+        Util::JsonObject* tmp = new Util::JsonObject();
+        tmp->emplace("id", info);
+        statesList->append(tmp);
+    }
     currentState->insert(info);
 }
 
 void DeparserConverter::insertState(emitState* info){
     cstring stateID = info->getStateName();
-    insertState(stateID);
+    previousState = currentState;
+    currentState = new ordered_set<cstring>();
+    LOG1("inserting state " << stateID);
+    if (state_set->insert(stateID).second){
+        Util::JsonObject* stateObject = new Util::JsonObject();
+        stateObject->emplace("id", stateID);
+        Util::JsonArray* elem = new Util::JsonArray();
+        Util::JsonArray* pos = new Util::JsonArray();
+        Util::JsonArray* nbBits = new Util::JsonArray();
+        for (auto i : info->bitMap) {
+            elem->append(i->first);
+            pos->append(i->second.first);
+            nbBits->append(i->second.second);
+        }
+        stateObject->emplace("HdrName", elem);
+        stateObject->emplace("HdrPos", pos);
+        stateObject->emplace("HdrLen", nbBits);
+        statesList->append(stateObject);
+    }
+    currentState->insert(stateID);
 }
 
 bool DeparserConverter::preorder(const IR::IfStatement* block){
@@ -118,6 +149,7 @@ bool DeparserConverter::preorder(const IR::IfStatement* block){
     nbEmitBits = prev_emitBits;
     state = oriEmitState;
     if (block->ifFalse != nullptr){
+        priority++;
         auto stateTrue = currentState;  // save state in True
         currentState = oriState;
         visit(block->ifFalse);
@@ -132,8 +164,17 @@ bool DeparserConverter::preorder(const IR::IfStatement* block){
             currentState->insert(cs);
         }
     }
-    // condList->pop_back();
     return false;
+}
+
+cstring DeparserConverter::headerName(const IR::Member *expression){
+    cstring argName = "";
+    CHECK_NULL(expression);
+    auto type = typeMap->getType(expression->expr);
+    if (type->is<IR::Type_StructLike>()){
+        argName = expression->member;
+    }
+    return argName;
 }
 
 bool DeparserConverter::preorder(const IR::MethodCallStatement* s){
@@ -145,7 +186,7 @@ bool DeparserConverter::preorder(const IR::MethodCallStatement* s){
         em->method->name.name == P4::P4CoreLibrary::instance.packetOut.emit.name) {
         auto mc = s->methodCall;
         auto arg = mc->arguments->at(0);
-        auto hdrName = arg->toString();
+        auto hdrName = headerName(arg->expression->to<IR::Member>());
         auto hdrW = uint32_t(typeMap->getType(arg)->width_bits());
         LOG1("emitting " << hdrW << " bits for hdr " << hdrName);
         // inserting for all possible positions
@@ -175,10 +216,12 @@ bool DeparserConverter::preorder(const IR::MethodCallStatement* s){
 
 bool DeparserConverter::preorder(const IR::P4Control* control) {
     links = new Util::JsonArray();
+    statesList = new Util::JsonArray();
     links_set = new ordered_set<cstring>();
     state_set = new ordered_set<cstring>();
     condList = new std::vector<cstring>();
     currentState = nullptr;
+    priority = 0;
     insertState(cstring("<start>"));
     return true;
 }
@@ -186,16 +229,27 @@ bool DeparserConverter::preorder(const IR::P4Control* control) {
 void DeparserConverter::postorder(const IR::P4Control* control) {
     Util::JsonObject* dep = new Util::JsonObject();
     dep->emplace("name", control->getName());
-    Util::JsonArray*  state = new Util::JsonArray();
+    Util::JsonObject* phv = new Util::JsonObject();
+    auto hdrIn = control->getApplyParameters()->parameters.at(1);
+    auto hdrType = typeMap->getType(hdrIn);
+    if (hdrType->is<IR::Type_Struct>()) {
+        auto hdrs = hdrType->to<IR::Type_Struct>();
+        for (auto i : hdrs->fields){
+            auto ht=typeMap->getType(i);
+            if (ht->is<IR::Type_Stack>()) {
+                ::error(ErrorType::ERR_UNSUPPORTED,
+                        "headers stack are not supported in deparser yet %1%",
+                        i->toString());
+            }
+            phv->emplace(i->toString(), uint32_t(ht->width_bits()));
+        }
+    }
+    dep->emplace("PHV", phv);
 // insert end state
+    priority++;
     insertState(cstring("<end>"));
     insertTransition();
-    for (auto i : *state_set){
-        Util::JsonObject* tmp = new Util::JsonObject();
-        tmp->emplace("id", i);
-        state->append(tmp);
-    }
-    dep->emplace("nodes", state);
+    dep->emplace("nodes", statesList);
     dep->emplace("links", links);
     json->setDeparser(dep);
 }
