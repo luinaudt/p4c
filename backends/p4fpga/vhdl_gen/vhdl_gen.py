@@ -363,12 +363,15 @@ class deparserHDL(object):
 
         def genStateTransitionCode(listTransition):
             def getStateTransition(name, cond):
+                condName = self.dep.edgesStructure["condition"]
                 busAssoc = self.busValidAssocPos
                 transitionTmpl = "NEXT_STATE <= {}; \n"
                 condTmpl = "headerValid({}) = '1' then \n {} \n"
                 tmp = transitionTmpl.format(name)
-                if "label" in cond:
-                    tmp = condTmpl.format(busAssoc[cond["label"]],
+                if condName in cond and cond[condName] is not None:
+                    print("genstate ", busAssoc)
+                    print(cond)
+                    tmp = condTmpl.format(busAssoc[cond[condName]],
                                           tmp)
                 return tmp, ("label" in cond)
 

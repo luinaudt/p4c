@@ -55,6 +55,7 @@ class deparserStateMachines(object):
         edge must be a tuple representing an edge of self.depG
         """
         st = 0
+        condName = self.edgesStructure["condition"]
         for i in range(int(self.headers[h]/8)):
             new_node = "{}_{}".format(h, i*8)
             self.stateMachines[st].add_node(new_node,
@@ -62,7 +63,8 @@ class deparserStateMachines(object):
                                             pos=(i*8, (i+1)*8-1))
             if i < len(self.stateMachines):
                 newInfo = self.depG.edges[edge]
-                newInfo[self.edgesStructure["condition"]] = h # currently one header only
+                if condName in newInfo and newInfo[condName] is not None:
+                    newInfo[condName] = h # currently one header only
                 self.stateMachines[st].add_edge(prev_hdr[st],
                                                 new_node,
                                                 **newInfo)
@@ -71,7 +73,7 @@ class deparserStateMachines(object):
                                                 new_node)
             prev_hdr[st] = new_node
             st = (st + 1) % len(self.stateMachines)
-
+    
     def genStateMachines(self):
         paths = nx.all_simple_paths(self.depG, self.init, self.last)
         paths2 = nx.all_simple_edge_paths(self.depG, self.init, self.last)
@@ -92,8 +94,6 @@ class deparserStateMachines(object):
             for i, m in enumerate(self.stateMachines):
                 newInfo = self.depG.edges[edge]
                 m.add_edge(prev_hdr[i], edge[1], **newInfo)
-        for i in self.stateMachines[0].edges:
-            print(self.stateMachines[0].edges[i])
 
     def exportToDot(self, folder, basename="state_machine"):
         """ export all states machines to dot file

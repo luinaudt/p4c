@@ -36,7 +36,6 @@ def DeparserComp(deparser, outputFolder, busWidth=64):
     deparserSplit.exportToDot(outputImgFold)
     deparserSplit.exportToPng(outputImgFold)
     phvBus = genPHVInfo(deparser["PHV"])
-    print(phvBus)
     deparserSplit.exportToVHDL(outputFolder, phvBus)
 
 
