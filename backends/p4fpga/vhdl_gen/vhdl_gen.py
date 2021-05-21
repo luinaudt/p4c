@@ -271,7 +271,9 @@ class deparserHDL(object):
             tW = 0
             phv_val_list = ["0"] * (phvValWidth+1)
             # Counting total header sizes in tW
-            for h in p:
+            for state in p:
+                # set payload connection according to valid headers.
+                h = self.dep._getHdrName(state)
                 if h in self.headerBus:
                     tW += self.headerBus[h][1] - self.headerBus[h][0] + 1
                     # generate phv_val cond
