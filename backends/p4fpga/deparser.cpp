@@ -88,7 +88,7 @@ void DeparserConverter::insertTransition(){
         LOG2("inserting links :" << IndentCtl::indent);
         for (auto ps : *previousState){
             for (auto cs : *currentState){
-                auto res = links_set->insert(ps+cs+label);
+                auto res = links_set->insert(ps+cs+cond);
                 if (!res.second){
                     continue;
                 }
