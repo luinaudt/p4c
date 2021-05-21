@@ -16,8 +16,8 @@ listId = [("a" , True),
 def isValidHDLId(name):
     """ remove unvalid character to have a valid hdlID
     """
-    vhdlIdPatern = "[a-z](_?[a-z0-9])*[a-z0-9]?$"
-    res = re.match(vhdlIdPatern, name, re.IGNORECASE)
+    vhdlIdPatern = "[a-z](_?[a-z0-9])*[a-z0-9]?"
+    res = re.fullmatch(vhdlIdPatern, name, re.IGNORECASE)
     if res:
         return True
     else:
