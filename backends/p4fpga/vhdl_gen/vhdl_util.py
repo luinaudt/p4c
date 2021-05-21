@@ -1,6 +1,7 @@
 from warnings import warn
-from random import randint
+from random import randint 
 from math import log2, ceil
+import re
 """ Some utility function for VHDL generation
 """
 
@@ -8,6 +9,22 @@ from math import log2, ceil
 def getLog2In(nbInput):
     return int(ceil(log2(nbInput)))
 
+def getValidVHDLId(name):
+    """ remove unvalid character to have a valid hdlID
+    """
+    vhdlIdPatern = "[a-z](_?[a-z0-9])*[a-z0-9]?"
+    pattern = re.compile(vhdlIdPatern, re.IGNORECASE)
+    res = pattern.fullmatch(name)
+    if res:
+        return name
+    else:
+        output=[]
+        res = pattern.search(name)
+        while res:
+            start, end = res.span()
+            output.append(res.string[start:end])
+            res = pattern.search(name, end)
+        return "_".join(output)
 
 def int2vector(val, vecSize):
     """

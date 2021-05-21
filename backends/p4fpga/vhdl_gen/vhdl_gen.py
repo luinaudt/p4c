@@ -5,6 +5,7 @@ from shutil import copyfile
 import networkx as nx
 from warnings import warn
 import vhdl_util
+from vhdl_util import getValidVHDLId
 
 VERSION = 0.1
 
@@ -57,6 +58,17 @@ class deparserHDL(object):
                         'payloadSize': deparser.busSize,
                         'outputSize': deparser.busSize,
                         'nbMuxes': deparser.nbStateMachine}
+
+    def __genStateNames(self, graph):
+        """ convert node names for a graph
+        """
+        stateNames = {}
+        for u in graph.nodes():
+            name = getValidVHDLId(u)
+            while name in stateNames :
+                name += "_1"
+            stateNames[u] = name
+        return stateNames
 
     def getVHDLParam(self):
         return self.dictSub
@@ -357,11 +369,13 @@ class deparserHDL(object):
         """Gen template for a state machine
         """
         graph = self.dep.getStateMachine(num)
+        stateNames = self.__genStateNames(graph)
         stateList = {}
         for u, v, d in graph.edges(data=True):
-            if u not in stateList:
-                stateList[u] = []
-            stateList[u].append((v, d))
+            name = stateNames[u]
+            if name not in stateList:
+                stateList[name] = []
+            stateList[name].append((v, d))
 
         def genStateTransitionCode(listTransition):
             def getStateTransition(name, cond):
@@ -373,7 +387,7 @@ class deparserHDL(object):
                 if condName in cond and cond[condName] is not None:
                     tmp = condTmpl.format(busAssoc[cond[condName]],
                                           tmp)
-                return tmp, ("label" in cond)
+                return tmp, (condName in cond)
 
             transitionCode = "{} {}"
             condCodeTmpl = "if {}"
@@ -389,15 +403,16 @@ class deparserHDL(object):
             if len(condCode) > 0:
                 condCode += "end if;\n"
             return transitionCode.format(noCondCode, condCode)
-
+        initStateName = stateNames[self.dep.init]
+        lastState = stateNames[self.dep.last]
         tmplDict = {"compVersion": VERSION,
                     "name": name,
-                    "initState": self.dep.init,
-                    "lastState": self.dep.last,
+                    "initState": initStateName,
+                    "lastState": lastState,
                     "stateList": "({})".format(", "
-                                               .join(list(graph.nodes))),
+                                               .join(stateNames.values())),
                     "initStateTransition":
-                    genStateTransitionCode(stateList.pop(self.dep.init))}
+                    genStateTransitionCode(stateList.pop(initStateName))}
         otherStateTransition = ""
         assocMuxIn = self.muxes[num][1]  # get ctrl val to assign for a state
         for k, struct in stateList.items():
