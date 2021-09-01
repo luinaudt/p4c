@@ -5,4 +5,4 @@ Currently only support deparser code generation
 
 # requirements :
 python3
-pip install networkx colorama
+pip install networkx colorama pygraphviz
