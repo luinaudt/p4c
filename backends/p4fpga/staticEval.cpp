@@ -240,6 +240,20 @@ void DoStaticEvaluation::postorder(const IR::P4Control *block){
     LOG1_UNINDENT;
 }
 
+bool DoStaticEvaluation::preorder(const IR::IfStatement *stat){
+    LOG1("visiting " << stat->condition);   
+    return true;
+}
+bool DoStaticEvaluation::preorder(const IR::P4Table *tab) {
+    LOG1("visiting table block" << tab->name);
+    return true;
+}
+
+bool DoStaticEvaluation::preorder(const IR::ActionFunction *action) {
+    LOG1("visiting " << action->name);
+    return true;
+}
+
 bool DoStaticEvaluation::preorder(const IR::BlockStatement *block){
     LOG1("visiting " << block->static_type_name());
     return true;
@@ -256,6 +270,7 @@ void DoStaticEvaluation::postorder(const IR::BlockStatement *block){
 We continue to evaluate call expression for specific expressions only.
 */
 bool DoStaticEvaluation::preorder(const IR::MethodCallStatement *stat){
+    LOG3("visiting " << stat->methodCall->method);
     auto mi = P4::MethodInstance::resolve(stat->methodCall, refMap, typeMap);
     if (auto bim = mi->to<P4::BuiltInMethod>()){
         LOG2(stat->static_type_name() << "  "<< bim->appliedTo << bim->name);

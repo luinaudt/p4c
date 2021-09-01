@@ -52,7 +52,8 @@ control MyIngress(inout headers PHV,
                   inout standard_metadata_t standard_metadata) {
 
     action encapsulate(bit<32> id){
-        PHV.tunnel.setValid(); PHV.tunnel.id=id; 
+        PHV.tunnel.setValid(); 
+        PHV.tunnel.id=id; 
         PHV.ethernet.type = 5;}
     action forward(bit<48> dstAddr) {
         PHV.ethernet.src = PHV.ethernet.dst;

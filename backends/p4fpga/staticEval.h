@@ -19,6 +19,7 @@ limitations under the License.
 #include <stack>
 #include <vector>
 #include "common/resolveReferences/referenceMap.h"
+#include "ir/ir-generated.h"
 #include "ir/ir.h"
 #include "ir/pass_manager.h"
 #include "ir/vector.h"
@@ -79,8 +80,10 @@ class DoStaticEvaluation : public Inspector{
     bool preorder(const IR::MethodCallStatement *stat) override;
     bool preorder(const IR::MethodCallExpression *expr) override;
     bool preorder(const IR::ParserState *state) override;
+    bool preorder(const IR::P4Table *tab) override;
+    bool preorder(const IR::ActionFunction *action) override;
     bool preorder(const IR::BlockStatement *block) override;
-    bool preorder(const IR::IfStatement *stat) override {return true;};
+    bool preorder(const IR::IfStatement *stat) override;
 
     // postorder
 
