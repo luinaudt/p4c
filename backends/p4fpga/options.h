@@ -28,6 +28,16 @@ class P4FpgaOptions : public CompilerOptions {
     cstring outputFile = "a.out";
     unsigned outBusWidth = 64;
     P4FpgaOptions() {
+        registerOption("--excludeBackendPasses", "pass1[,pass2]",
+                   [this](const char* arg) {
+                      excludeBackendPasses = true;
+                      auto copy = strdup(arg);
+                      while (auto pass = strsep(&copy, ","))
+                          passesToExcludeBackend.push_back(pass);
+                      return true;
+                   },
+                   "Exclude passes from backend passes whose name is equal\n"
+                   "to one of `passX' strings.\n");
         registerOption("--outputWidth", "width",
                       [this](const char* arg) {
                         outBusWidth = strtoul(arg, nullptr, 10);

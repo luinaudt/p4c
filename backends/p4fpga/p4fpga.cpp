@@ -35,6 +35,9 @@ FPGABackend::FPGABackend(FPGA::P4FpgaOptions& options,
             new doReachabilitySimplifier(refMap, typeMap,
                                          hdr_status->at(4))
         });
+        if (options.excludeBackendPasses) {
+            removePasses(options.passesToExcludeBackend);
+        }
 }
 
 void FPGABackend::convert(const IR::P4Program *&program){
