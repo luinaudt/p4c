@@ -2,6 +2,7 @@ vhdl_gen/*/
 
 test/*
 !test/samples
+!test/paper_src
 !test/expected_output
 test/expected_output/dots
 \#*\#
