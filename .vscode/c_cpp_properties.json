@@ -3,8 +3,7 @@
         {
             "name": "Linux",
             "includePath": [
-                "/workspaces/p4c/**"
-            ],
+                "/workspaces/p4c/**"            ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c17",

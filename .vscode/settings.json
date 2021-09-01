@@ -2,8 +2,8 @@
     "cmake.configureOnOpen": true,
     "cmake.useCMakeServer": false,
     "cmake.configureSettings": {
-        "CMAKE_CXX_COMPILER" : "/usr/bin/g++-9",
-        "CMAKE_C_COMPILER" : "/usr/bin/gcc-9"
+        "CMAKE_CXX_COMPILER" : "/usr/bin/g++-5",
+        "CMAKE_C_COMPILER" : "/usr/bin/gcc-5"
     },
     "files.associations": {
         "exception": "cpp",
