@@ -55,8 +55,8 @@ class DoStaticEvaluation : public Inspector{
     P4::ValueMap*             hdr;
     std::stack<P4::ValueMap*> hdr_stack;
     P4::ExpressionEvaluator*  evaluator;
-    ValueMapList*             hdr_vec;
-    ValueMapList*             hdr_vecIn;
+    ValueMapList*             hdr_vec; // final header list.
+    ValueMapList*             hdr_vecIn; // hdr list when visiting a block
     std::vector<ValueMapList*> *hdr_vec_list;
     const P4::SymbolicValueFactory* factory;
 
@@ -80,8 +80,12 @@ class DoStaticEvaluation : public Inspector{
     bool preorder(const IR::MethodCallStatement *stat) override;
     bool preorder(const IR::MethodCallExpression *expr) override;
     bool preorder(const IR::ParserState *state) override;
+    
     bool preorder(const IR::P4Table *tab) override;
-    bool preorder(const IR::ActionFunction *action) override;
+    //void postorder(const IR::P4Table *tab) override;
+    bool preorder(const IR::P4Action *tab) override;
+    //void postorder(const IR::P4Action *tab) override;
+
     bool preorder(const IR::BlockStatement *block) override;
     bool preorder(const IR::IfStatement *stat) override;
 

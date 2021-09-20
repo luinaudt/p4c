@@ -16,6 +16,7 @@ limitations under the License.
 
 
 #include "backends/p4fpga/staticEval.h"
+#include "ir/ir-generated.h"
 #include "ir/ir.h"
 #include "ir/node.h"
 #include "lib/error.h"
@@ -244,15 +245,42 @@ bool DoStaticEvaluation::preorder(const IR::IfStatement *stat){
     LOG1("visiting " << stat->condition);   
     return true;
 }
+
+/** At this point we determine the impact of an action.
+ We should then visit them to only determine their impact (i.e. header valid changes)
+*/
 bool DoStaticEvaluation::preorder(const IR::P4Table *tab) {
-    LOG1("visiting table block" << tab->name);
-    return true;
+    LOG1("visiting P4table" << tab->name);
+    return false;
 }
 
-bool DoStaticEvaluation::preorder(const IR::ActionFunction *action) {
-    LOG1("visiting " << action->name);
-    return true;
+
+/** At this point we determine the impact of an action.
+ We should then visit them with new structures.
+*/
+bool DoStaticEvaluation::preorder(const IR::P4Action *action) {
+    // will not work if condition 
+    LOG1("visiting P4 Action " << action->name << IndentCtl::indent);
+    LOG2("looking at " << action->name << " body ");
+    auto tmpHdr = hdr->map.begin()->second->clone();
+    tmpHdr->setAllUnknown();
+    evaluator = new P4::ExpressionEvaluator(refMap, typeMap, hdr);
+    // auto tmpEval = new P4::ExpressionEvaluator(refMap, typeMap, tmp_hdrVec);
+    for(auto i : action->body->components){
+        LOG2(i);
+        if(auto stat=i->to<IR::MethodCallStatement>()){
+            auto mi = P4::MethodInstance::resolve(stat->methodCall, refMap, typeMap);
+            if (auto bim = mi->to<P4::BuiltInMethod>()){
+                auto exp = stat->methodCall;
+                return true;
+            }
+
+        }
+    }
+    LOG1_UNINDENT;
+    return false;
 }
+
 
 bool DoStaticEvaluation::preorder(const IR::BlockStatement *block){
     LOG1("visiting " << block->static_type_name());
@@ -280,10 +308,11 @@ bool DoStaticEvaluation::preorder(const IR::MethodCallStatement *stat){
 }
 bool DoStaticEvaluation::preorder(const IR::MethodCallExpression *expr){
     if (hdr_vecIn != nullptr) {
+        LOG2("evaluation of " << expr->toString());
         for (auto i : *hdr_vecIn){
             evaluator = new P4::ExpressionEvaluator(refMap, typeMap, i);
             auto res = evaluator->evaluate(expr, false);
-            LOG2("evaluation of " << expr->toString());
+            LOG2("with " << *i);
             LOG3("  got: " << res);
         }
     } else{
