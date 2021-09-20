@@ -29,6 +29,9 @@ limitations under the License.
 #include "p4/methodInstance.h"
 
 namespace FPGA {
+    /** update hdr and hdr list to be able to evaluate them in a new block
+        reference to parameter is updated
+    */
 ValueMapList* ValueMapList::update_hdr_ref(const IR::Parameter* hdrParam){
     auto newMap = new P4::ValueMap();
     auto newHdr_vec = new ValueMapList();
@@ -220,6 +223,10 @@ bool DoStaticEvaluation::preorder(const IR::P4Control *block){
         ::error(ErrorType::ERR_UNEXPECTED,
                 "%1%: param is not a struct", paramType);
     }
+    // update hdr info references.
+    hdr = new P4::ValueMap();
+    auto val = factory->create(paramType, true);
+    hdr->set(hdrIn, val);
     if (hdrIn->direction == IR::Direction::In){
         LOG1("Read only Headers, no change in hdr status");
         LOG1_UNINDENT;
@@ -261,22 +268,20 @@ bool DoStaticEvaluation::preorder(const IR::P4Table *tab) {
 bool DoStaticEvaluation::preorder(const IR::P4Action *action) {
     // will not work if condition 
     LOG1("visiting P4 Action " << action->name << IndentCtl::indent);
+    auto saveHdr_vecIn = hdr_vecIn; //pointer save
+    auto saveEvaluator = evaluator;
+    hdr_vecIn=nullptr; // evaluation of action independant of code execution
+    auto tmpHdr = hdr->clone(); //special headers
+    tmpHdr->map.begin()->second->setAllUnknown();
+    evaluator = new P4::ExpressionEvaluator(refMap, typeMap, tmpHdr);
     LOG2("looking at " << action->name << " body ");
-    auto tmpHdr = hdr->map.begin()->second->clone();
-    tmpHdr->setAllUnknown();
-    evaluator = new P4::ExpressionEvaluator(refMap, typeMap, hdr);
-    // auto tmpEval = new P4::ExpressionEvaluator(refMap, typeMap, tmp_hdrVec);
     for(auto i : action->body->components){
         LOG2(i);
-        if(auto stat=i->to<IR::MethodCallStatement>()){
-            auto mi = P4::MethodInstance::resolve(stat->methodCall, refMap, typeMap);
-            if (auto bim = mi->to<P4::BuiltInMethod>()){
-                auto exp = stat->methodCall;
-                return true;
-            }
-
-        }
+        visit(i);
     }
+    LOG2("header vector output " << tmpHdr);
+    hdr_vecIn=saveHdr_vecIn;
+    evaluator = saveEvaluator;
     LOG1_UNINDENT;
     return false;
 }
