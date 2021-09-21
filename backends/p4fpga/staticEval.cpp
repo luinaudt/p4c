@@ -16,6 +16,7 @@ limitations under the License.
 
 
 #include "backends/p4fpga/staticEval.h"
+#include "ir/declaration.h"
 #include "ir/ir-generated.h"
 #include "ir/ir.h"
 #include "ir/node.h"
@@ -27,6 +28,7 @@ limitations under the License.
 #include "lib/ordered_map.h"
 #include "midend/interpreter.h"
 #include "p4/methodInstance.h"
+#include <map>
 
 namespace FPGA {
     /** update hdr and hdr list to be able to evaluate them in a new block
@@ -81,6 +83,7 @@ void ValueMapList::push_unique(P4::ValueMap* val){
 bool DoStaticEvaluation::preorder(const IR::ToplevelBlock *tlb) {
     LOG1("visiting program according to execution order");
     hdr = new P4::ValueMap();
+    MATres = new ordered_map<cstring, P4::ValueMap*>();
     hdr_vec = new ValueMapList();
     auto main = tlb->getMain();
     auto param = main->getConstructorParameters();
@@ -257,17 +260,41 @@ bool DoStaticEvaluation::preorder(const IR::IfStatement *stat){
  We should then visit them to only determine their impact (i.e. header valid changes)
 */
 bool DoStaticEvaluation::preorder(const IR::P4Table *tab) {
-    LOG1("visiting P4table" << tab->name);
+    LOG1("visiting " << tab->static_type_name() << tab->name);
     return false;
 }
 
+/**
+Check if a symbolic value is unknown
+If at least one value is known, return true
+*/
+bool DoStaticEvaluation::hasKnown(P4::SymbolicValue * values){
+    if (values->isScalar()) {
+        auto val = values->to<P4::ScalarValue>();
+        return val->isKnown();
+    } else if(values->is<P4::SymbolicHeader>()){
+        auto hdrVal = values->to<P4::SymbolicHeader>();
+        return hdrVal->valid->isKnown();
+    } else if(values->is<P4::SymbolicStruct>()){
+        auto structVal = values->to<P4::SymbolicStruct>();
+        for (auto i : structVal->fieldValue){
+            if(hasKnown(i.second)){
+                return true;
+            }
+        }
+    }else{
+        ::warning(ErrorType::WARN_UNSUPPORTED, 
+                  "header type %1% not supported yet", values->type);
+    }
+    return false;
+}
 
 /** At this point we determine the impact of an action.
  We should then visit them with new structures.
 */
 bool DoStaticEvaluation::preorder(const IR::P4Action *action) {
     // will not work if condition 
-    LOG1("visiting P4 Action " << action->name << IndentCtl::indent);
+    LOG1("visiting " << action->static_type_name() << action->name << IndentCtl::indent);
     auto saveHdr_vecIn = hdr_vecIn; //pointer save
     auto saveEvaluator = evaluator;
     hdr_vecIn=nullptr; // evaluation of action independant of code execution
@@ -279,7 +306,10 @@ bool DoStaticEvaluation::preorder(const IR::P4Action *action) {
         LOG2(i);
         visit(i);
     }
-    LOG2("header vector output " << tmpHdr);
+    if(hasKnown(tmpHdr->map.begin()->second)){
+        LOG2("found modified headers");
+        MATres->emplace(action->getName(), tmpHdr);
+    }
     hdr_vecIn=saveHdr_vecIn;
     evaluator = saveEvaluator;
     LOG1_UNINDENT;
@@ -303,11 +333,20 @@ void DoStaticEvaluation::postorder(const IR::BlockStatement *block){
 We continue to evaluate call expression for specific expressions only.
 */
 bool DoStaticEvaluation::preorder(const IR::MethodCallStatement *stat){
-    LOG3("visiting " << stat->methodCall->method);
+    LOG3("visiting " << stat->static_type_name() << " " << stat->methodCall->method);
     auto mi = P4::MethodInstance::resolve(stat->methodCall, refMap, typeMap);
     if (auto bim = mi->to<P4::BuiltInMethod>()){
         LOG2(stat->static_type_name() << "  "<< bim->appliedTo << bim->name);
         return true;
+    }
+    else if (auto am = mi->to<P4::ApplyMethod>()) { //table
+        if (am->isTableApply()){
+            LOG2(stat->static_type_name() << " " << am->applyObject);
+            auto elem = am->object;
+            LOG2("evaluation of " << elem->getName());
+            
+            return false;
+        }
     }
     return false;
 }

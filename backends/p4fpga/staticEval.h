@@ -16,6 +16,7 @@ limitations under the License.
 #ifndef BACKENDS_P4FPGA_STATICEVAL_H_
 #define BACKENDS_P4FPGA_STATICEVAL_H_
 
+#include <map>
 #include <stack>
 #include <vector>
 #include "common/resolveReferences/referenceMap.h"
@@ -59,7 +60,9 @@ class DoStaticEvaluation : public Inspector{
     ValueMapList*             hdr_vecIn; // hdr list when visiting a block
     std::vector<ValueMapList*> *hdr_vec_list;
     const P4::SymbolicValueFactory* factory;
-
+    ordered_map<cstring, P4::ValueMap*>* MATres; //match action table results
+ private:
+    bool hasKnown(P4::SymbolicValue * values);
  public:
     /**
     Inspector class for static evaluation of P4 program
