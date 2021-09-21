@@ -260,7 +260,12 @@ bool DoStaticEvaluation::preorder(const IR::IfStatement *stat){
  We should then visit them to only determine their impact (i.e. header valid changes)
 */
 bool DoStaticEvaluation::preorder(const IR::P4Table *tab) {
-    LOG1("visiting " << tab->static_type_name() << tab->name);
+    LOG1("visiting " << tab->static_type_name() << " " << tab->name);
+    LOG2("found " << tab->getActionList()->size() << " actions" << IndentCtl::indent);
+    for (auto i: tab->getActionList()->actionList){
+        LOG2(i->getName());
+    }
+    LOG2_UNINDENT;
     return false;
 }
 
