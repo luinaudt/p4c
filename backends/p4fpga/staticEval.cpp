@@ -83,7 +83,8 @@ void ValueMapList::push_unique(P4::ValueMap* val){
 bool DoStaticEvaluation::preorder(const IR::ToplevelBlock *tlb) {
     LOG1("visiting program according to execution order");
     hdr = new P4::ValueMap();
-    MATres = new ordered_map<cstring, P4::ValueMap*>();
+    actionRes = new ordered_map<cstring, P4::ValueMap*>();
+    MATres = new ordered_map<cstring, ValueMapList*>();
     hdr_vec = new ValueMapList();
     auto main = tlb->getMain();
     auto param = main->getConstructorParameters();
@@ -256,14 +257,48 @@ bool DoStaticEvaluation::preorder(const IR::IfStatement *stat){
     return true;
 }
 
+/** evaluate action res.
+For each unknown value of action res, set it with previous Hdr.
+actionres is modified.
+return false if no modification.
+*/
+bool DoStaticEvaluation::evaluateActionRes(const P4::ValueMap* previousHdr, 
+                                           P4::ValueMap* actionRes){
+    bool modified = false;
+    if(previousHdr->map.begin()->first != actionRes->map.begin()->first){
+        ::error(ErrorType::ERR_NOT_FOUND, "no common variable");
+    }
+    // merge values
+    auto hdrRetStruct = actionRes->map.begin()->second->to<P4::SymbolicStruct>();
+    auto hdrOriStruct = previousHdr->map.begin()->second->to<P4::SymbolicStruct>();
+    // currently headers must be in the stuct
+    for (auto i : hdrRetStruct->fieldValue){
+        if(i.second->is<P4::SymbolicHeader>()){
+            auto hdr= i.second->to<P4::SymbolicHeader>();
+            if(hdr->valid->isUnknown()){
+                i.second->assign(hdrOriStruct->fieldValue.at(i.first));
+            }
+        } else{
+            ::error(ErrorType::ERR_TYPE_ERROR, "%1% is not supported", i.second->type);
+        }
+    }
+    LOG2("in evaluate action res " << actionRes);
+    return modified;
+}
+
 /** At this point we determine the impact of an action.
  We should then visit them to only determine their impact (i.e. header valid changes)
 */
 bool DoStaticEvaluation::preorder(const IR::P4Table *tab) {
     LOG1("visiting " << tab->static_type_name() << " " << tab->name);
     LOG2("found " << tab->getActionList()->size() << " actions" << IndentCtl::indent);
+    auto tabAction = new ValueMapList();
+    MATres->emplace(tab->getName(), tabAction);
     for (auto i: tab->getActionList()->actionList){
-        LOG2(i->getName());
+        auto action = actionRes->find(i->getName());
+        if( action != actionRes->end()){
+            tabAction->push_unique(action->second);
+        }
     }
     LOG2_UNINDENT;
     return false;
@@ -313,7 +348,7 @@ bool DoStaticEvaluation::preorder(const IR::P4Action *action) {
     }
     if(hasKnown(tmpHdr->map.begin()->second)){
         LOG2("found modified headers");
-        MATres->emplace(action->getName(), tmpHdr);
+        actionRes->emplace(action->getName(), tmpHdr);
     }
     hdr_vecIn=saveHdr_vecIn;
     evaluator = saveEvaluator;
@@ -323,7 +358,7 @@ bool DoStaticEvaluation::preorder(const IR::P4Action *action) {
 
 
 bool DoStaticEvaluation::preorder(const IR::BlockStatement *block){
-    LOG1("visiting " << block->static_type_name());
+    LOG1("visiting " << block->static_type_name() << IndentCtl::indent);
     return true;
 }
 
@@ -332,6 +367,7 @@ void DoStaticEvaluation::postorder(const IR::BlockStatement *block){
     if (hdr_vecIn != nullptr){
         hdr_vec->merge(hdr_vecIn);
     }
+    LOG1_UNINDENT;
 }
 
 /**
@@ -348,13 +384,25 @@ bool DoStaticEvaluation::preorder(const IR::MethodCallStatement *stat){
         if (am->isTableApply()){
             LOG2(stat->static_type_name() << " " << am->applyObject);
             auto elem = am->object;
-            LOG2("evaluation of " << elem->getName());
-            
-            return false;
+            LOG2("table apply evaluation : " << elem->getName());
+            auto tabRes = MATres->find(am->object->getName());
+            if(tabRes != MATres->end()){
+                for(auto tabHdr: *tabRes->second){
+                    for(auto curSet: *hdr_vec){
+                        auto newHdr = tabHdr->clone();
+                        if(evaluateActionRes(curSet, newHdr)){
+                            hdr_vec->push_unique(newHdr);
+                        }
+                    }
+                }
+            }
         }
+        return false;
     }
+
     return false;
 }
+
 bool DoStaticEvaluation::preorder(const IR::MethodCallExpression *expr){
     if (hdr_vecIn != nullptr) {
         LOG2("evaluation of " << expr->toString());

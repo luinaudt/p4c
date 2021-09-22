@@ -60,9 +60,13 @@ class DoStaticEvaluation : public Inspector{
     ValueMapList*             hdr_vecIn; // hdr list when visiting a block
     std::vector<ValueMapList*> *hdr_vec_list;
     const P4::SymbolicValueFactory* factory;
-    ordered_map<cstring, P4::ValueMap*>* MATres; //match action table results
+    ordered_map<cstring, P4::ValueMap*>* actionRes; //action hdr result
+    ordered_map<cstring, ValueMapList*>* MATres; //match action table results
+    
  private:
     bool hasKnown(P4::SymbolicValue * values);
+    bool evaluateActionRes(const P4::ValueMap* previousHdr, 
+                           P4::ValueMap* actionRes);
  public:
     /**
     Inspector class for static evaluation of P4 program
