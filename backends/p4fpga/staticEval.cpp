@@ -276,13 +276,13 @@ bool DoStaticEvaluation::evaluateActionRes(const P4::ValueMap* previousHdr,
         if(i.second->is<P4::SymbolicHeader>()){
             auto hdr= i.second->to<P4::SymbolicHeader>();
             if(hdr->valid->isUnknown()){
+                modified=true;
                 i.second->assign(hdrOriStruct->fieldValue.at(i.first));
             }
         } else{
             ::error(ErrorType::ERR_TYPE_ERROR, "%1% is not supported", i.second->type);
         }
     }
-    LOG2("in evaluate action res " << actionRes);
     return modified;
 }
 
@@ -387,14 +387,17 @@ bool DoStaticEvaluation::preorder(const IR::MethodCallStatement *stat){
             LOG2("table apply evaluation : " << elem->getName());
             auto tabRes = MATres->find(am->object->getName());
             if(tabRes != MATres->end()){
+                auto newHdrVec = new ValueMapList();
                 for(auto tabHdr: *tabRes->second){
-                    for(auto curSet: *hdr_vec){
+                    for(auto curSet: *hdr_vecIn){
                         auto newHdr = tabHdr->clone();
                         if(evaluateActionRes(curSet, newHdr)){
-                            hdr_vec->push_unique(newHdr);
+                            LOG2("try push " << newHdr);
+                            newHdrVec->push_unique(newHdr);
                         }
                     }
                 }
+                hdr_vecIn->merge(newHdrVec);
             }
         }
         return false;
