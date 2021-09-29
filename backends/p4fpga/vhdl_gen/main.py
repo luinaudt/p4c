@@ -38,6 +38,24 @@ def DeparserComp(deparser, outputFolder, busWidth=64):
     phvBus = genPHVInfo(deparser["PHV"])
     deparserSplit.exportToVHDL(outputFolder, phvBus)
 
+def compJsonArg(filename, outputFolder, deparserName):
+    
+    if os.path.isdir(filename):
+        print(f"compiling file in {filename}")
+        for file in os.listdir(filename):
+            newFile=os.path.join(filename,file)
+            newOutput=os.path.join(outputFolder, file.split(".")[0])
+            compJsonArg(newFile, newOutput, deparserName)
+        return
+    print(f"compiling {filename} -> {outputFolder}")
+    P4Json = None
+    with open(filename,'r') as f:
+        P4Json = json.loads(f.read())
+    deparser=P4Json[deparserName]
+    if not os.path.exists(outputFolder):
+        os.makedirs(outputFolder)
+    DeparserComp(deparser, outputFolder, P4Json["outputBus"])
+
 
 def main(argv):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -50,17 +68,9 @@ def main(argv):
     elif len(jsonNames) > 1:
         print("only one json convert is currently supported")
         sys.exit(1)
-
-    jsonFile = jsonNames[0] # only one json accepted currently
-    P4Json = None
-    with open(jsonFile,'r') as f:
-        P4Json = json.loads(f.read())
     
-    deparser=P4Json[args.deparserName]
-    output = os.path.join(os.getcwd(), args.output)
-    if not os.path.exists(output):
-        os.mkdir(output)
-    DeparserComp(deparser, output, P4Json["outputBus"])
+    for jsonFile in jsonNames:
+        compJsonArg(jsonFile, os.path.join(os.getcwd(), args.output), args.deparserName)
 
 
 if __name__ == "__main__":
