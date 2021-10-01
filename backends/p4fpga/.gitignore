@@ -1,5 +1,5 @@
 vhdl_gen/*/
-
+!vhdl_gen/board
 test/*
 !test/samples
 !test/paper_src
