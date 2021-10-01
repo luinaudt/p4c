@@ -32,6 +32,7 @@ class deparserHDL(object):
                  baseName="deparser",
                  libDirName="lib",
                  clk="clk", reset_n="reset_n"):
+        self.MainOutputDir=outputDir #root folder for all other outputs
         self.clkName = clk
         self.enDep = "en_deparser"
         self.rstName = reset_n
@@ -70,6 +71,9 @@ class deparserHDL(object):
             stateNames[u] = name
         return stateNames
 
+    def getMainOutputDir(self):
+        return self.MainOutputDir
+        
     def getVHDLParam(self):
         return self.dictSub
 
