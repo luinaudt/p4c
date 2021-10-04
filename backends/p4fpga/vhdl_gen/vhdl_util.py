@@ -1,6 +1,7 @@
 from warnings import warn
 from random import randint 
 from math import log2, ceil
+from vhdl_keywords import vhdlKeywordsSet as vhdlReservedWord
 import re
 """ Some utility function for VHDL generation
 """
@@ -12,11 +13,12 @@ def getLog2In(nbInput):
 def getValidVHDLId(name):
     """ remove unvalid character to have a valid hdlID
     """
+    retour = None
     vhdlIdPatern = "[a-z](_?[a-z0-9])*[a-z0-9]?"
     pattern = re.compile(vhdlIdPatern, re.IGNORECASE)
     res = pattern.fullmatch(name)
     if res:
-        return name
+        retour= name
     else:
         output=[]
         res = pattern.search(name)
@@ -24,8 +26,11 @@ def getValidVHDLId(name):
             start, end = res.span()
             output.append(res.string[start:end])
             res = pattern.search(name, end)
-        return "_".join(output)
-
+        retour= "_".join(output)
+    if retour in vhdlReservedWord:
+        return f"{retour}_res"
+    return retour
+    
 def int2vector(val, vecSize):
     """
     return the string to have a std_logic_vector
