@@ -369,7 +369,7 @@ class deparserHDL(object):
             self._genMux(i)
             self._genStateMachine(i)
 
-    def _getStMCompTmpl(self, num, name):
+    def _getStMCompTmpl(self, num, entityName):
         """Gen template for a state machine
         """
         graph = self.dep.getStateMachine(num)
@@ -377,10 +377,10 @@ class deparserHDL(object):
         stateList = {}
         for u, v, d in graph.edges(data=True):
             name = stateNames[u]
+            nextName = stateNames[v]
             if name not in stateList:
                 stateList[name] = []
-            stateList[name].append((v, d))
-
+            stateList[name].append((nextName, d))
         def genStateTransitionCode(listTransition):
             def getStateTransition(name, cond):
                 condName = self.dep.edgesStructure["condition"]
@@ -410,7 +410,7 @@ class deparserHDL(object):
         initStateName = stateNames[self.dep.init]
         lastState = stateNames[self.dep.last]
         tmplDict = {"compVersion": VERSION,
-                    "name": name,
+                    "name": entityName,
                     "initState": initStateName,
                     "lastState": lastState,
                     "stateList": "({})".format(", "
