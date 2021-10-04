@@ -7,6 +7,7 @@ cd ${project}
 source vivado.tcl
 synth_design
 write_checkpoint -force ${project}/Synth.dcp
+file mkdir ${report_folder}
 report_timing_summary -file ${report_folder}/post_synth_timing_summary.rpt
 report_utilization -hierarchical -file ${report_folder}/post_synth_util_hier.rpt
 """
