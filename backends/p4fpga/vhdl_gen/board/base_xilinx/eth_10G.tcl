@@ -173,6 +173,7 @@ proc create_root_design { parentCell } {
   set xxv_ethernet_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xxv_ethernet:3.3 xxv_ethernet_0 ]
   set_property -dict [ list \
    CONFIG.BASE_R_KR {BASE-R} \
+   CONFIG.ENABLE_PIPELINE_REG {1} \
    CONFIG.GT_REF_CLK_FREQ {156.25} \
    CONFIG.INCLUDE_AXI4_INTERFACE {0} \
    CONFIG.INCLUDE_STATISTICS_COUNTERS {0} \
