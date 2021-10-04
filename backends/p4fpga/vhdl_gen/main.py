@@ -31,9 +31,8 @@ def vivado_gen_wrapper(outputDir, deparser, args):
     """ wrapper for gen_vivado from : 
     https://github.com/luinaudt/deparser/blob/master/src/compiler/gen_vivado.py
     """
-    projectParam = {"projectName": "project1",
+    projectParam = {"projectName": args.projectName,
                     "busWidth": args.busWidth,
-                    "deparserName": args.deparserName,
                     "boardDir": os.path.join(os.getcwd(), "board", args.genVivado)}
     if not os.path.exists(projectParam["boardDir"]):
         raise NameError(f"{args.genVivado}, is not a valid board name, look at board folder")
@@ -42,6 +41,7 @@ def vivado_gen_wrapper(outputDir, deparser, args):
     projectParam["phvValidityWidth"] = depParam["phvValidityWidth"]
     projectParam["phvValidityDep"] = depParam["phvValidity"]
     projectParam["phvBusDep"] = depParam["phvBus"]
+    projectParam["deparserName"] = depParam["name"]
     vhdlDir = deparser.getMainOutputDir()
     gen_vivado(projectParam, vhdlDir, os.path.join(outputDir, args.genVivado))
     export_constraints(projectParam, os.path.join(outputDir, "constraints"))
@@ -68,7 +68,7 @@ def compJsonArg(filename, outputFolder, args):
             compJsonArg(newFile, newOutput, args)
         return
     print(f"compiling {filename} -> {outputFolder}")
-    deparserName = args.deparserName
+    deparserName = "deparser"
     P4Json = None
     with open(filename,'r') as f:
         P4Json = json.loads(f.read())
@@ -82,7 +82,7 @@ def compJsonArg(filename, outputFolder, args):
 def main(argv):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--output", help="output folder vhdl code", required=True)
-    parser.add_argument("--deparserName", help="Name of the deparser (in the json files)", required=False, default="deparser")
+    parser.add_argument("--projectName", help="Name of the project", required=False, default="project1")
     parser.add_argument("--genVivado", help="Generate vivado files with the board file given", required=False, default=None)
     parser.add_argument("--busWidth", help="fifo bus width", required=False, default=64)
     args, jsonNames = parser.parse_known_args()
