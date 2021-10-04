@@ -7,7 +7,7 @@ import os
 import argparse
 import json
 
-
+vivadoBuilds = [] #list of all build created for vivado
 def genPHVInfo(phv, baseName='phv_'):
     headAssoc = {} # data hdr bus
     valAssoc = {} # validity bit
@@ -49,7 +49,9 @@ def vivado_gen_wrapper(outputDir, deparser, args):
     buildFile = str(os.path.join(outputDir, args.genVivado, "build.tcl"))
     gen_vivado(projectParam, vhdlDir, projectDir)
     constraintsFile = export_constraints(projectParam, constraintsDir)
-    gen_scripts(buildFile, projectDir, constraintsFile)
+    reportFolder =  os.path.join(args.reportFolder)
+    gen_scripts(buildFile, projectDir, constraintsFile, reportFolder)
+    vivadoBuilds.append(buildFile)
     
 
 def DeparserComp(deparser, outputFolder, busWidth=64):
@@ -65,12 +67,15 @@ def DeparserComp(deparser, outputFolder, busWidth=64):
     
 
 def compJsonArg(filename, outputFolder, args):
+    oldReport = args.reportFolder
     if os.path.isdir(filename):
         print(f"compiling file in {filename}")
         for file in os.listdir(filename):
             newFile=os.path.join(filename,file)
             newOutput=os.path.join(outputFolder, file.split(".")[0])
+            args.reportFolder = os.path.join(args.reportFolder, file.split(".")[0])
             compJsonArg(newFile, newOutput, args)
+            args.reportFolder=oldReport
         return
     print(f"compiling {filename} -> {outputFolder}")
     deparserName = "deparser"
@@ -90,6 +95,7 @@ def main(argv):
     parser.add_argument("--projectName", help="Name of the project", required=False, default="project1")
     parser.add_argument("--genVivado", help="Generate vivado files with the board file given", required=False, default=None)
     parser.add_argument("--busWidth", help="fifo bus width", required=False, default=64)
+    parser.add_argument("--reportFolder", help="base folder where to save results", required=False, default="result")
     args, jsonNames = parser.parse_known_args()
 
     if jsonNames is None or len(jsonNames) == 0:
@@ -99,9 +105,16 @@ def main(argv):
         print("only one json convert is currently supported")
         sys.exit(1)
     
+    args.output=os.path.join(os.getcwd(), args.output)
+    args.reportFolder=os.path.join(os.getcwd(), args.reportFolder)
     for jsonFile in jsonNames:
-        compJsonArg(jsonFile, os.path.join(os.getcwd(), args.output), args)
-
+        compJsonArg(jsonFile, args.output, args)
+    if args.genVivado:
+        vivadoAll = os.path.join(args.output, "genAllVivadoBuild.tcl")
+        with open(vivadoAll, 'w') as f:
+            print(f"writing build all vivado in : {vivadoAll}")
+            for i in vivadoBuilds:
+                f.write(f"source {i}\n")
 
 if __name__ == "__main__":
     # execute only if run as a script

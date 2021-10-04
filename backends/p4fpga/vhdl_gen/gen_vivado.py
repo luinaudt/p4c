@@ -35,6 +35,7 @@ def gen_scripts(buildFile, projectDir, constraintsFile,
                 "report_folder": str(reportFolder)}
     outputFile=""
     outputFile += tmplBuild.substitute(tmplDict)
+    outputFile += "close_project"
     with open(buildFile,'w') as f:
         f.write(outputFile)
     
