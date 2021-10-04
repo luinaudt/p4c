@@ -1,7 +1,8 @@
 #!/bin/python
+from networkx.algorithms.structuralholes import constraint
 from jsonToHDL import deparserStateMachines
 import sys
-from gen_vivado import gen_vivado, export_constraints
+from gen_vivado import gen_scripts, gen_vivado, export_constraints
 import os
 import argparse
 import json
@@ -43,8 +44,12 @@ def vivado_gen_wrapper(outputDir, deparser, args):
     projectParam["phvBusDep"] = depParam["phvBus"]
     projectParam["deparserName"] = depParam["name"]
     vhdlDir = deparser.getMainOutputDir()
-    gen_vivado(projectParam, vhdlDir, os.path.join(outputDir, args.genVivado))
-    export_constraints(projectParam, os.path.join(outputDir, "constraints"))
+    projectDir = os.path.join(outputDir, args.genVivado)
+    constraintsDir = os.path.join(outputDir, "constraints")
+    buildFile = str(os.path.join(outputDir, args.genVivado, "build.tcl"))
+    gen_vivado(projectParam, vhdlDir, projectDir)
+    constraintsFile = export_constraints(projectParam, constraintsDir)
+    gen_scripts(buildFile, projectDir, constraintsFile)
     
 
 def DeparserComp(deparser, outputFolder, busWidth=64):

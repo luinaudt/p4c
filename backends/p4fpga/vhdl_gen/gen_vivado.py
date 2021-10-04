@@ -1,14 +1,43 @@
 from string import Template
 from os import path, walk, mkdir
 from shutil import copyfile
+from gen_vivado_build import tclSynthTmpl, tclImplTmpl
 
 
 def export_constraints(projectParameters, constDir):
+    listConstraints = []
     boardDir = projectParameters["boardDir"]
     if not path.exists(constDir):
         mkdir(constDir)
+    #todo add support for multiple files : for loop
+    constFile = path.join(constDir, "top.xdc")
     copyfile(path.join(boardDir, "top.xdc"),
-             path.join(constDir, "top.xdc"))
+             constFile)
+    listConstraints.append(str(constFile))
+    return listConstraints
+
+def gen_scripts(buildFile, projectDir, constraintsFile, 
+                reportFolder="result", withImpl=False):
+    """ gen scripts for vivado implementation
+    reportFolder : folder where results are saved
+    withImpl : add implementation to script otherwise only synthesis
+    """
+    print(f"genscript {buildFile}")
+    tclTmpl=tclSynthTmpl
+    if withImpl:
+        tclTmpl+=tclImplTmpl
+    tmplBuild = Template(tclTmpl)
+    constraints = ""
+    for i in constraintsFile:
+        constraints += f"read_xdc {i}\n" 
+    tmplDict = {"project": str(projectDir),
+                "constraints": constraints,
+                "report_folder": str(reportFolder)}
+    outputFile=""
+    outputFile += tmplBuild.substitute(tmplDict)
+    with open(buildFile,'w') as f:
+        f.write(outputFile)
+    
 
 
 def gen_vivado(projectParameters, rtlDir, outputDir, tclFile="vivado.tcl"):
