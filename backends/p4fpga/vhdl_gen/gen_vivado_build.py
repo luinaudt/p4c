@@ -5,7 +5,6 @@ from string import Template
 tclSynthTmpl="""
 cd ${project}
 source vivado.tcl
-launch_runs impl_1
 synth_design
 write_checkpoint -force ${project}/Synth.dcp
 report_timing_summary -file ${report_folder}/post_synth_timing_summary.rpt
