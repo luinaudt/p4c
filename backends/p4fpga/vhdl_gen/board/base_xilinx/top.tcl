@@ -10,4 +10,6 @@ create_bd_design eth_10G
 source ${boardDir}/eth_10G.tcl
 create_root_design ""
 save_bd_design
+synth_design
+save_bd_design
 close_bd_design eth_10G
