@@ -86,9 +86,8 @@ architecture behavioral of top is
   signal axis_clk_0        : std_logic;
   -- signal for dep
   signal payload_in_tready : std_logic;
-  signal phvBus            : std_logic_vector($phvBusWidth downto 0)      := (others => '0');
+  signal phvBus, phvBusTmp : std_logic_vector($phvBusWidth downto 0)      := (others => '0');
   signal validityBus       : std_logic_vector($phvValidityWidth downto 0) := (others => '0');
-
   signal deparser_ready : std_logic;
   signal en_deparser    : std_logic;
 
@@ -104,15 +103,17 @@ architecture behavioral of top is
 begin
   axis_tx_tdata <= packet_out_tdata((cptData + 1) * 64 - 1 downto cptData*64);
   axis_tx_tkeep <= packet_out_tkeep((cptData + 1) * 8 - 1 downto cptData*8);
-
-  process (cptphv, axis_rx_tdata, cptData) is
+  phvBus <= phvBusTmp when rising_edge(clk);
+  
+  process (cptphv, axis_rx_tdata, cptData, phvBus) is
     variable w_tmp : integer;
   begin
-    if cptphv + 64 > $phvBusWidth + 1 then
+    phvBusTmp <= phvBus;
+    if (cptphv+1) * 64 > $phvBusWidth + 1 then
       w_tmp                                            := $phvBusWidth mod 64;
-      phvBus($phvBusWidth downto $phvBusWidth - w_tmp) <= axis_rx_tdata(w_tmp downto 0);
+      phvBusTmp($phvBusWidth downto $phvBusWidth - w_tmp) <= axis_rx_tdata(w_tmp downto 0);
     else
-      phvBus((cptphv+1) * 64 - 1 downto cptphv*64) <= axis_rx_tdata;
+    phvBusTmp((cptphv+1) * 64 - 1 downto cptphv*64) <= axis_rx_tdata;
     end if;
     validityBus <= axis_rx_tdata(validityBus'range);
   end process;
@@ -140,7 +141,7 @@ begin
         cptData <= 0;
       end if;
       cptphv <= cptphv + 1;
-      if cptphv + 64 > $phvBusWidth + 1 then
+      if cptphv * 64 > $phvBusWidth + 1 then
         cptphv <= 0;
       end if;
     end if;
