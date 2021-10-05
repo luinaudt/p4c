@@ -79,7 +79,6 @@ class deparserStateMachines(object):
         #paths = nx.all_simple_paths(self.depG, self.init, self.last)
         paths = nx.all_simple_edge_paths(self.depG, self.init, self.last)
         for n, p in enumerate(paths):
-            print(p)
             if n % 1000 == 999:
                 print("gen stateMachine path: {}".format(n))
             st = 0
