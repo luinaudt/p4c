@@ -35,7 +35,7 @@ class deparserStateMachines(object):
             tmp.add_node(self.init)
             tmp.add_node(self.last)
             self.stateMachines.append(tmp)
-        self.genStateMachines()
+        self.genStateMachinesOld()
 
     def _getHdrName(self, state):
         headerName = self.nodesStructure["headerName"]
@@ -74,6 +74,35 @@ class deparserStateMachines(object):
             prev_hdr[st] = new_node
             st = (st + 1) % len(self.stateMachines)
     
+    def genStateMachinesOld(self):
+        paths = nx.all_simple_paths(self.depG, self.init, self.last)
+        for n, p in enumerate(paths):
+            if n % 1000 == 999:
+                print("gen stateMachine path: {}".format(n))
+            st = 0
+            prev_hdr = []
+            for i in self.stateMachines:
+                prev_hdr.append(self._getHdrName(p[0]))
+            for h in p:
+                header = self._getHdrName(h)
+                if header in self.headers:
+                    for i in range(int(self.headers[header]/8)):
+                        new_node = "{}_{}".format(header, i*8)
+                        self.stateMachines[st].add_node(new_node,
+                                                        header=header,
+                                                        pos=(i*8, (i+1)*8-1))
+                        if i < len(self.stateMachines):
+                            self.stateMachines[st].add_edge(prev_hdr[st],
+                                                            new_node,
+                                                            label=header)
+                        else:
+                            self.stateMachines[st].add_edge(prev_hdr[st],
+                                                            new_node)
+                        prev_hdr[st] = new_node
+                        st = (st + 1) % len(self.stateMachines)
+            for i, m in enumerate(self.stateMachines):
+                m.add_edge(prev_hdr[i], self._getHdrName(p[-1]))
+
     def genStateMachines(self):
         # paths = nx.all_simple_paths(self.depG, self.init, self.last)
         paths = nx.all_simple_edge_paths(self.depG, self.init, self.last)
