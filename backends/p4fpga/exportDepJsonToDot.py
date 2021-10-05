@@ -51,14 +51,17 @@ def getGraph(inputFile, deparserName):
     with open(inputFile,'r') as f:
         deparser = json.load(f)[deparserName]
     graph = networkx.readwrite.json_graph.node_link_graph(deparser["graph"], directed=True)
-    return graph
+    return graph, deparser["startState"], deparser["lastState"]
 
 def processFile(inputFile, outputFile, deparserName):
-    graph = getGraph(inputFile,deparserName)
+    graph, startState, endState = getGraph(inputFile,deparserName)
     if options.countEdges:
         print(f"{inputFile} : edges = {networkx.number_of_edges(graph)}")
     if options.toDot:
         genDot(graph, outputFile, deparserName)
+    if options.countPath:
+        nbPath = sum(1 for i in networkx.all_simple_paths(graph,startState, endState))
+        print(f"{inputFile} : path = {nbPath}")
 
 def genDot(graph, outputFile, deparserName):
     networkx.drawing.nx_agraph.write_dot(graph, outputFile)
@@ -77,6 +80,7 @@ def main(argv):
     parser.add_argument("--output", "-o", help="output file or folder results", required=True)
     parser.add_argument("--deparserName", help="name of the deparser", default="deparser", required=False)
     parser.add_argument("--countEdges", help="activate edges count", action="store_true", required=False)
+    parser.add_argument("--countPath", help="activate path count", action="store_true", required=False)
     parser.add_argument("--notToDot", dest="toDot", help="deactivate dot export", action="store_false", required=False)
     args, otherArgs = parser.parse_known_args()
     options=args
