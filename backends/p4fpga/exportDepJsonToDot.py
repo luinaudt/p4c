@@ -62,6 +62,9 @@ def processFile(inputFile, outputFile, deparserName):
     if options.countPath:
         nbPath = sum(1 for i in networkx.all_simple_paths(graph,startState, endState))
         print(f"{inputFile} : path = {nbPath}")
+    if options.countNodes:
+        nbNodes = sum(1 for i in graph.nodes)
+        print(f"{inputFile} : nodes = {nbNodes}")
 
 def genDot(graph, outputFile, deparserName):
     networkx.drawing.nx_agraph.write_dot(graph, outputFile)
@@ -80,6 +83,7 @@ def main(argv):
     parser.add_argument("--output", "-o", help="output file or folder results", required=True)
     parser.add_argument("--deparserName", help="name of the deparser", default="deparser", required=False)
     parser.add_argument("--countEdges", help="activate edges count", action="store_true", required=False)
+    parser.add_argument("--countNodes", help="activate nodes count", action="store_true", required=False)
     parser.add_argument("--countPath", help="activate path count", action="store_true", required=False)
     parser.add_argument("--notToDot", dest="toDot", help="deactivate dot export", action="store_false", required=False)
     args, otherArgs = parser.parse_known_args()

@@ -67,8 +67,10 @@ def process(args, otherArgs):
         cmdArgs.extend(otherArgs)
         cmdArgs.append(os.path.join(args.inputFolder, i))
         commands.append(cmdArgs)
-
-    launchCompilation(commands, args.nbThreads)
+    if args.dryRun:
+        launchCompilation(commands, -1)
+    else:
+        launchCompilation(commands, args.nbThreads)
 
 
 def launchCompilation(commands, nbThread=1):
@@ -79,6 +81,8 @@ def launchCompilation(commands, nbThread=1):
     localList = []
     for cmdArgs in commands:
         print(" ".join(cmdArgs))
+        if nbThread<0:
+            continue
         local = Local()
         local.process = Popen(cmdArgs)
         localList.append(local)
@@ -104,6 +108,7 @@ def main(argv):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--inputFolder", help="folder of p4 source files", required=True)
     parser.add_argument("--outputTest", help="output folder results", required=True)
+    parser.add_argument("--dryRun", help="dry-run, no execution", action="store_true", required=False)
     parser.add_argument("--compiler", help="compiler executable", required=True)
     parser.add_argument("--nbThreads", help="number of parallel compilation",type=int, default=1, required=False)
     parser.add_argument("--passToDump", help="pass to dump", nargs='+', default=["Last","Backend"], required=False)
@@ -125,7 +130,8 @@ def main(argv):
         print("Compiler {} does not exists".format(args.compiler))
         error = True
     if error: exit(1)
-    mkOutputDir(args.outputTest, JSONFOLDER, P4FOLDER)
+    if not args.dryRun:
+        mkOutputDir(args.outputTest, JSONFOLDER, P4FOLDER)
     process(args, otherArgs)
     
     
