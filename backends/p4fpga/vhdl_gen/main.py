@@ -96,7 +96,7 @@ def main(argv):
     parser.add_argument("--output", help="output folder vhdl code", required=True)
     parser.add_argument("--projectName", help="Name of the project", required=False, default="project1")
     parser.add_argument("--genVivado", help="Generate vivado files with the board file given", required=False, default=None)
-    parser.add_argument("--busWidth", help="fifo bus width", required=False, default=None)
+    parser.add_argument("--busWidth", help="fifo bus width", required=False, type=int, default=None)
     parser.add_argument("--reportFolder", help="base folder where to save results", required=False, default="result")
     args, jsonNames = parser.parse_known_args()
 
