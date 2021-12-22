@@ -3,27 +3,21 @@ import os
 from string import Template
 
 tclSynthTmpl="""
-cd ${project}
+cd $project
 source vivado.tcl
-synth_design
-write_checkpoint -force ${project}/Synth.dcp
+launch_runs synth_1
+wait_on_run synth_1
+open_run synth_1
 file mkdir ${report_folder}
 report_timing_summary -file ${report_folder}/post_synth_timing_summary.rpt
 report_utilization -hierarchical -file ${report_folder}/post_synth_util_hier.rpt
 """
 tclImplTmpl="""
-read_checkpoint ${project}/Synth.dcp
-${constraints}
-link_design -part xcvu3p-ffvc1517-3-e -top top -mode out_of_context
-opt_design
-write_checkpoint -force ${project}/post_opt.dcp
-place_design
+launch_runs impl_1
+wait_on_run impl_1
+open_run impl_1
 report_timing_summary -file ${report_folder}/post_place_timing_summary.rpt
 report_utilization -hierarchical -file ${report_folder}/post_place_util.rpt
-write_checkpoint -force /${project}/post_place.dcp
-route_design
-report_timing_summary -file ${report_folder}/post_route_timing_summary.rpt
-write_checkpoint -force ${project}/post_route.dcp
 """
 
 def cleanVivadoDir(directory):

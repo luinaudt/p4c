@@ -50,7 +50,7 @@ def vivado_gen_wrapper(outputDir, deparser, args):
     gen_vivado(projectParam, vhdlDir, projectDir)
     constraintsFile = export_constraints(projectParam, constraintsDir)
     reportFolder =  os.path.join(args.reportFolder)
-    gen_scripts(buildFile, projectDir, constraintsFile, reportFolder)
+    gen_scripts(buildFile, projectDir, constraintsFile, reportFolder, True)
     vivadoBuilds.append(buildFile)
     
 
