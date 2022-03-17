@@ -66,7 +66,36 @@ def processFile(inputFile, outputFile, deparserName):
         nbNodes = sum(1 for i in graph.nodes)
         print(f"{inputFile} : nodes = {nbNodes}")
 
+def __getSortedLabel(graph, node):
+    labels = {}
+    for lab in graph[node]:
+        priority = graph[node][lab][0]['priority']
+        labels[priority] = graph[node][lab][0]
+        labels[priority]['edge'] = (node, lab)
+    labelsSorted = {}
+    for i in sorted(labels):
+        labelsSorted[i]=labels[i]
+    return labelsSorted
+
+def __changeLabel(graph, node):
+    labels = __getSortedLabel(graph, node)
+    cond, debut = None,0
+    for pri, val in labels.items():
+        src, dst = val['edge']
+        if 'condition' in val:
+            condTmp, debut = val['condition'][4:-8], 1
+        else:
+            condTmp, debut = "",0
+        if cond is None:
+            cond = condTmp
+        else:
+            cond = condTmp + " AND \n " * debut + "not " + cond
+
+        graph[src][dst][0]['label'] = cond
+
 def genDot(graph, outputFile, deparserName):
+    for i in graph.nodes:
+        __changeLabel(graph, i)
     networkx.drawing.nx_agraph.write_dot(graph, outputFile)
 
 def convert(fileName = "a.out", outfileName= "a.dot", deparserName = "deparser"):
