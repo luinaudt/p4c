@@ -470,6 +470,8 @@ class deparserHDL(object):
         """
         graph = self.dep.getStateMachine(muxNum)
         nbInput = len(graph)-2
+        if nbInput==0:
+            nbInput=1
         outWidth = 8
         muxName = "mux_{}".format(muxNum)
         outputName = "muxes_o({})".format(muxNum)

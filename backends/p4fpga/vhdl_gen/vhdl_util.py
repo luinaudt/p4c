@@ -8,10 +8,11 @@ import re
 
 
 def getLog2In(nbInput):
-    if nbInput==0:
-        # special cases if no input, should be simplified after
-        return 0
-    return int(ceil(log2(nbInput)))
+    if nbInput in [0, 1]:
+        ret = 1
+    else:
+        ret = int(ceil(log2(nbInput)))
+    return ret
 
 def getValidVHDLId(name):
     """ remove unvalid character to have a valid hdlID

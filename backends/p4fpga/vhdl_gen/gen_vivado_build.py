@@ -5,6 +5,8 @@ from string import Template
 tclSynthTmpl="""
 cd $project
 source vivado.tcl
+set_property STEPS.SYNTH_DESIGN.ARGS.MAX_BRAM 0 [get_runs synth_1]
+set_property STEPS.SYNTH_DESIGN.ARGS.MAX_URAM 0 [get_runs synth_1]
 launch_runs synth_1
 wait_on_run synth_1
 open_run synth_1
