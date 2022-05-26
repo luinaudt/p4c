@@ -1,4 +1,9 @@
 [![Build Status](https://travis-ci.com/p4lang/p4c.svg?branch=master)](https://travis-ci.com/p4lang/p4c)
+# this repo
+This repo contains a new backend for the P4c compiler in which the deparser generation is optimized through symbolic analysis.
+The branch paper_fpga_backend correspond contains code used to generate result for the paper "Symbolic Analysis for Data Plane Programs Specialization"
+The backend to generate the deparser graph is /p4fpga/ in the folder backends/p4fpga.
+
 
 # p4c
 
